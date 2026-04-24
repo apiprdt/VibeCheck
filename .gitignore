@@ -16,6 +16,9 @@ venv/
 env/
 ENV/
 
+# VibeCheck cache
+.vibecheck/
+
 # IDE
 .vscode/
 .idea/

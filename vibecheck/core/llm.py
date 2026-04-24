@@ -6,9 +6,12 @@ Detection is always rule-based (see detector.py).
 
 from __future__ import annotations
 
+import hashlib
 import os
 from pathlib import Path
 from typing import Any
+
+from vibecheck.core.cache import cache
 
 SYSTEM_PROMPT = """You are vibecheck, a professional code education assistant.
 Your role is to explain code and teach concepts clearly.
@@ -53,22 +56,40 @@ def get_model() -> str:
     """Get the configured LLM model.
 
     Priority: VIBECHECK_MODEL env var > config.yaml > default.
+    Enterprise Mode: Forces 'ollama/' prefix.
     """
+    is_enterprise = os.environ.get("VIBECHECK_ENTERPRISE_MODE") == "1"
     env_model = os.environ.get("VIBECHECK_MODEL")
+    
     if env_model:
-        return env_model
-
-    config = _load_config()
-    if config.get("model"):
-        return config["model"]
-
-    return "gpt-4o-mini"
+        model = env_model
+    else:
+        config = _load_config()
+        model = config.get("model", "gpt-4o-mini")
+        
+    if is_enterprise and not model.startswith("ollama/"):
+        return f"ollama/{model}"
+        
+    return model
 
 
 def is_llm_available() -> bool:
-    """Check if any LLM API key is configured."""
+    """Check if any LLM API key is configured.
+    
+    In Enterprise Mode, ONLY Ollama is allowed.
+    Supports OpenAI, Anthropic, Google (Gemini), Mistral, and Ollama.
+    """
+    if os.environ.get("VIBECHECK_ENTERPRISE_MODE") == "1":
+        return bool(os.environ.get("OLLAMA_API_BASE"))
+        
     return any(os.environ.get(v) for v in [
-        "OPENAI_API_KEY", "ANTHROPIC_API_KEY", "OLLAMA_API_BASE",
+        "OPENAI_API_KEY",
+        "ANTHROPIC_API_KEY",
+        "GOOGLE_API_KEY",
+        "MISTRAL_API_KEY",
+        "OLLAMA_API_BASE",
+        "GEMINI_API_KEY",
+        "GROQ_API_KEY",
     ])
 
 
@@ -80,6 +101,12 @@ def _call_llm(messages: list[dict[str, str]], **kwargs: Any) -> str:
     try:
         import litellm
         litellm.suppress_debug_info = True
+        
+        # Handle Ollama base URL if provided
+        api_base = os.environ.get("OLLAMA_API_BASE")
+        if api_base:
+            kwargs["api_base"] = api_base
+
         response = litellm.completion(
             model=get_model(),
             messages=messages,
@@ -128,6 +155,43 @@ def explain_issues(
     if not is_llm_available():
         return {"summary": "", "explanations": "", "senior": "", "risks": ""}
 
+    # Check for Project Specific Guidelines with Safety Limit
+    project_rules = ""
+    rules_path = Path(".vibecheck_rules.md")
+    if rules_path.exists():
+        try:
+            with open(rules_path, "r", encoding="utf-8") as f:
+                raw_rules = f.read()
+                
+            # SAFETY 1: Token Limit Safeguard (Max ~800 tokens / 3500 chars)
+            if len(raw_rules) > 3500:
+                project_rules = raw_rules[:3500] + "\n\n[WARNING: .vibecheck_rules.md is too large and was truncated. Please clean up old rules.]"
+            else:
+                project_rules = raw_rules
+                
+            # SAFETY 2: Basic Language Filter (Very naive, but effective)
+            # If scanning a .py file, hint the LLM to prioritize Python rules.
+            ext = Path(filepath).suffix
+            if ext in [".py"]:
+                project_rules = f"(Priority: Focus on Python/Backend rules)\n{project_rules}"
+            elif ext in [".js", ".jsx", ".ts", ".tsx"]:
+                project_rules = f"(Priority: Focus on Javascript/Frontend rules)\n{project_rules}"
+                
+        except Exception:
+            pass
+
+    # Check Cache first
+    cache_key = {
+        "code_hash": hashlib.md5(code.encode()).hexdigest(),
+        "issues": issues_text,
+        "modes": [learn_mode, senior_mode, risks_mode],
+        "project_rules_hash": hashlib.md5(project_rules.encode()).hexdigest() if project_rules else "",
+        "model": get_model()
+    }
+    cached_resp = cache.get(**cache_key)
+    if cached_resp:
+        return cached_resp
+
     concept_lines = []
     for c in concepts:
         status = memory_context.get(c, "new")
@@ -141,10 +205,14 @@ def explain_issues(
 
     prompt = (
         f"Analyze: {filepath}\n\n```\n{code[:6000]}\n```\n\n"
-        f"## Detected Issues:\n{issues_text or 'None.'}\n\n"
+        f"## Detected Issues (Global):\n{issues_text or 'None.'}\n\n"
         f"## Concepts:\n{chr(10).join(concept_lines) or 'None.'}\n\n"
-        "Respond with:\n### SUMMARY\n(3-5 sentences)\n### EXPLANATIONS\n(issues + concepts)"
     )
+    
+    if project_rules:
+        prompt += f"## PROJECT-SPECIFIC GUIDELINES:\n{project_rules}\n(Ensure the code follows these local rules. If not, point it out as a CRITICAL/WARN issue!)\n\n"
+
+    prompt += "Respond with:\n### SUMMARY\n(3-5 sentences)\n### EXPLANATIONS\n(issues + concepts)"
     if senior_mode:
         prompt += "\n### SENIOR PERSPECTIVE\n(architecture suggestions)"
     if risks_mode:
@@ -160,6 +228,10 @@ def explain_issues(
     ])
     if not result["summary"] and not result["explanations"]:
         result["summary"] = resp
+    
+    # Store in Cache
+    cache.set(result, **cache_key)
+    
     return result
 
 
@@ -204,6 +276,17 @@ def analyze_debt(file_summaries: list[dict[str, Any]], total: int, analyzed: int
     if not is_llm_available():
         return {"critical_files": "", "can_wait": ""}
 
+    # Check Cache
+    cache_key = {
+        "debt_summaries": file_summaries[:30], # Cache based on top 30 files
+        "total": total,
+        "analyzed": analyzed,
+        "model": get_model()
+    }
+    cached_resp = cache.get(**cache_key)
+    if cached_resp:
+        return cached_resp
+
     lines = []
     for fs in file_summaries[:30]:
         issues = ", ".join(
@@ -223,4 +306,8 @@ def analyze_debt(file_summaries: list[dict[str, Any]], total: int, analyzed: int
     result = _parse_sections(resp, [("start", "critical_files"), ("can", "can_wait")])
     if not result["critical_files"]:
         result["critical_files"] = resp
+    
+    # Store in Cache
+    cache.set(result, **cache_key)
+    
     return result

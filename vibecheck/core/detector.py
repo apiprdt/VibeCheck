@@ -798,24 +798,29 @@ ALL_CHECKS = [
 ]
 
 
-def detect(filepath: str) -> DetectionResult:
+def detect(filepath: str, custom_content: str | None = None, line_filter: set[int] | None = None) -> DetectionResult:
     """Run all rule-based detection patterns against a file.
 
     Args:
         filepath: Path to the source code file to analyze.
+        custom_content: Raw string content (used for staged git scanning).
+        line_filter: Set of line numbers to restrict issues to (used for git diff).
 
     Returns:
         DetectionResult with all detected issues and concepts.
     """
     path = Path(filepath)
-    if not path.exists():
-        raise FileNotFoundError(f"File not found: {filepath}")
-
     language = detect_language(filepath)
-    try:
-        content = path.read_text(encoding="utf-8")
-    except UnicodeDecodeError:
-        content = path.read_text(encoding="latin-1")
+
+    if custom_content is not None:
+        content = custom_content
+    else:
+        if not path.exists():
+            raise FileNotFoundError(f"File not found: {filepath}")
+        try:
+            content = path.read_text(encoding="utf-8")
+        except UnicodeDecodeError:
+            content = path.read_text(encoding="latin-1")
 
     lines = content.splitlines()
 
@@ -828,6 +833,10 @@ def detect(filepath: str) -> DetectionResult:
         except Exception:
             # Don't let one failing check break everything
             pass
+
+    # Filter by line numbers if provided
+    if line_filter is not None:
+        all_issues = [i for i in all_issues if i.line_number in line_filter]
 
     # Extract concepts
     concepts = _extract_concepts(lines, all_issues, language)

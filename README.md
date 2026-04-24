@@ -9,7 +9,7 @@ AI tools make you faster. vibecheck makes sure you actually understand what you'
 ## Install
 
 ```bash
-pip install vibecheck
+pip install vibecheck-ai-tool
 ```
 
 Or install from source:
@@ -30,6 +30,14 @@ export OPENAI_API_KEY=sk-...
 
 # Or Anthropic
 export ANTHROPIC_API_KEY=sk-ant-...
+
+# Or Google Gemini
+export GOOGLE_API_KEY=your-key
+export VIBECHECK_MODEL=gemini/gemini-1.5-flash
+
+# Or Mistral
+export MISTRAL_API_KEY=your-key
+export VIBECHECK_MODEL=mistral/mistral-large-latest
 
 # Or use a local model via Ollama (fully offline)
 export OLLAMA_API_BASE=http://localhost:11434
@@ -118,13 +126,42 @@ vibecheck --debt ./src
 └────────────────────────────────────────────────────┘
 ```
 
+### Git Integration (The "Senior Dev" Workflow)
+
+Scan only files that are currently staged for commit. It reads directly from the git stage, ignoring uncommitted working tree changes, and filters issues to only lines that were actually modified:
+
+```bash
+# Scan staged files with full AI explanation
+vibecheck --staged
+
+# Scan staged files locally (NO AI, lightning fast — perfect for hooks)
+vibecheck --staged --fast
+```
+
 ### Optional flags
 
 ```bash
 vibecheck file.py --learn     # Deeper concept explanations with examples
 vibecheck file.py --senior    # What a senior dev would change
 vibecheck file.py --risks     # Extended risk analysis
+vibecheck file.py --json      # Output results as JSON
 ```
+
+---
+
+## Project-Specific Rules (Continuous Learning)
+
+vibecheck learns your team's specific coding guidelines over time. 
+Create a `.vibecheck_rules.md` file in your project root:
+
+```markdown
+# VibeCheck Project Guidelines
+## Python
+1. ALWAYS use SQLAlchemy ORM, never raw SQL.
+2. Use `structlog` for logging, never `print()`.
+```
+
+vibecheck will automatically inject these rules as context, acting like a Virtual Senior Developer that enforces your specific project culture.
 
 ---
 
@@ -133,6 +170,8 @@ vibecheck file.py --risks     # Extended risk analysis
 | Command | Description |
 |---|---|
 | `vibecheck <file>` | Analyze a file for issues and concepts |
+| `vibecheck --staged` | Analyze only files staged for commit |
+| `vibecheck --staged --fast`| Analyze staged files with local rules only (No AI) |
 | `vibecheck <file> --json` | Output results as JSON (for CI/CD) |
 | `vibecheck --error "msg" <file>` | Diagnose an error in context |
 | `vibecheck --debt <dir>` | Scan directory for knowledge debt |
@@ -146,12 +185,14 @@ vibecheck file.py --risks     # Extended risk analysis
 
 Cursor, Claude Code, and Aider make you ship faster. **vibecheck makes sure you understand what you shipped.**
 
-- **Rule-based detection** catches real issues instantly — no AI needed, no API key required
-- **AI explanations** teach you *why* it matters and *how* to fix it
-- **Concept memory** tracks what you've learned, so explanations get shorter over time
-- **Pre-commit hook** catches issues before they hit your repo
+- **Rule-based detection** catches real issues instantly — no AI needed, no API key required.
+- **Smart Caching** makes repeated scans of the same file instantaneous.
+- **AI explanations** teach you *why* it matters and *how* to fix it.
+- **Concept memory** tracks what you've learned, so explanations get shorter over time.
+- **Project Context** learns your team's specific rules via `.vibecheck_rules.md`.
+- **Git integration** (`--staged`) eliminates noise by only auditing what you're about to ship.
 
-vibecheck isn't a linter. It's a mentor that remembers what you know.
+vibecheck isn't a linter. It's a Virtual Senior Developer that remembers what you know and protects your codebase.
 
 ---
 
@@ -179,8 +220,10 @@ vibecheck isn't a linter. It's a mentor that remembers what you know.
 |---|---|---|
 | `OPENAI_API_KEY` | OpenAI API key | — |
 | `ANTHROPIC_API_KEY` | Anthropic API key | — |
+| `GOOGLE_API_KEY` | Google AI (Gemini) key | — |
 | `OLLAMA_API_BASE` | Ollama API URL | — |
-| `VIBECHECK_MODEL` | LLM model to use | `gpt-4o-mini` |
+| `VIBECHECK_MODEL` | LLM model to use (LiteLLM format) | `gpt-4o-mini` |
+| `VIBECHECK_ENTERPRISE_MODE` | Set to `1` to block Cloud APIs (Forces Ollama) | `0` |
 
 ### Config File (optional)
 
@@ -209,7 +252,7 @@ Priority: env var > config file > default.
 
 ---
 
-## Local Model Support (Ollama)
+## Local Model Support (Ollama & Enterprise Security)
 
 Run completely offline with [Ollama](https://ollama.com):
 
@@ -220,10 +263,15 @@ ollama pull llama3
 # Configure vibecheck
 export OLLAMA_API_BASE=http://localhost:11434
 export VIBECHECK_MODEL=ollama/llama3
-
-# Use normally
-vibecheck src/app.py
 ```
+
+**Enterprise Security Mode**
+For organizations with strict Data Loss Prevention (DLP) policies, you can forcefully block all cloud LLM providers:
+
+```bash
+export VIBECHECK_ENTERPRISE_MODE=1
+```
+When this is active, VibeCheck will completely ignore `OPENAI_API_KEY` and refuse to run unless an Ollama local model is provided.
 
 ---
 

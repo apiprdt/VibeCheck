@@ -79,7 +79,7 @@ def _filter_issues(issues: list, config: dict) -> list:
     return [i for i in issues if i.pattern_name not in ignore_patterns]
 
 
-def _output_json(result, concept_statuses: dict = None) -> None:
+def _output_json(result, llm_response: dict = None, concept_statuses: dict = None) -> None:
     """Print detection results as JSON for CI/CD integration."""
     output = {
         "filepath": result.filepath,
@@ -103,8 +103,12 @@ def _output_json(result, concept_statuses: dict = None) -> None:
             "total": len(result.issues),
         },
     }
+    if llm_response:
+        output["ai_explanation"] = llm_response
     if concept_statuses:
         output["concept_statuses"] = concept_statuses
+    
+    # Use standard print for the JSON string
     print(json.dumps(output, indent=2))
 
 
@@ -117,6 +121,8 @@ def main(
     debt: Optional[str] = typer.Option(
         None, "--debt", "-d", help="Directory to scan for knowledge debt"
     ),
+    staged: bool = typer.Option(False, "--staged", "-s", help="Only scan files currently staged in Git (git add)"),
+    fast: bool = typer.Option(False, "--fast", help="Run rule-based detection only (no AI, extremely fast)"),
     learn: bool = typer.Option(False, "--learn", help="Deeper concept explanations with examples"),
     senior: bool = typer.Option(False, "--senior", help="Add senior dev perspective"),
     risks: bool = typer.Option(False, "--risks", help="Add extended risk analysis"),
@@ -150,6 +156,11 @@ def main(
         _run_debt_scan(debt)
         return
 
+    # --- Staged scan ---
+    if staged:
+        _run_staged_scan(learn=learn, senior=senior, risks=risks, json_output=json_output, fast=fast)
+        return
+        
     # --- Need a file from here ---
     if not file:
         rich_console.print("[red]Error:[/red] Please provide a file to analyze.")
@@ -169,9 +180,82 @@ def main(
     # --- Core file analysis ---
     _run_file_analysis(
         str(filepath), learn=learn, senior=senior, risks=risks,
-        json_output=json_output,
+        json_output=json_output, fast=fast
     )
 
+def _get_staged_content_and_lines(filepath: str) -> tuple[str, set[int]]:
+    """Get the staged content and the line numbers that were modified."""
+    import subprocess
+    import re
+    
+    # 1. Get the staged content (git show :filepath)
+    content_result = subprocess.run(
+        ["git", "show", f":{filepath}"],
+        capture_output=True, text=True, check=False, encoding="utf-8"
+    )
+    if content_result.returncode != 0:
+        return "", set()
+    staged_content = content_result.stdout
+
+    # 2. Get the modified line numbers (git diff --cached --unified=0 filepath)
+    diff_result = subprocess.run(
+        ["git", "diff", "--cached", "--unified=0", filepath],
+        capture_output=True, text=True, check=False, encoding="utf-8"
+    )
+    diff_output = diff_result.stdout
+    
+    modified_lines = set()
+    # Parse git diff hunk headers: @@ -10,0 +11,5 @@
+    hunk_pattern = re.compile(r"^@@ -\d+(?:,\d+)? \+(\d+)(?:,(\d+))? @@", re.MULTILINE)
+    
+    for match in hunk_pattern.finditer(diff_output):
+        start_line = int(match.group(1))
+        num_lines = int(match.group(2)) if match.group(2) else 1
+        for i in range(num_lines):
+            modified_lines.add(start_line + i)
+            
+    return staged_content, modified_lines
+
+def _run_staged_scan(
+    learn: bool = False,
+    senior: bool = False,
+    risks: bool = False,
+    json_output: bool = False,
+    fast: bool = False,
+) -> None:
+    """Scan only files that are staged in git."""
+    import subprocess
+    
+    try:
+        result = subprocess.run(
+            ["git", "diff", "--cached", "--name-only"],
+            capture_output=True, text=True, check=True
+        )
+    except Exception:
+        rich_console.print("[yellow]Notice:[/yellow] Not a git repository or git is not installed.")
+        raise typer.Exit(1)
+        
+    files = result.stdout.splitlines()
+    valid_files = [f for f in files if Path(f).suffix in SCAN_EXTENSIONS]
+    
+    if not valid_files:
+        rich_console.print("[dim]No staged files to check. (Tip: Use `git add <file>` first)[/dim]")
+        raise typer.Exit(0)
+        
+    if not json_output:
+        rich_console.print(f"[bold bright_blue]>> VibeChecking {len(valid_files)} staged file(s)...[/bold bright_blue]")
+        rich_console.print()
+        
+    for filepath in valid_files:
+        content, line_filter = _get_staged_content_and_lines(filepath)
+        if not content:
+            continue # File might be deleted or unreadable
+            
+        _run_file_analysis(
+            filepath, learn=learn, senior=senior, risks=risks, 
+            json_output=json_output, fast=fast,
+            custom_content=content, line_filter=line_filter
+        )
 
 def _run_file_analysis(
     filepath: str,
@@ -179,6 +263,9 @@ def _run_file_analysis(
     senior: bool = False,
     risks: bool = False,
     json_output: bool = False,
+    fast: bool = False,
+    custom_content: str | None = None,
+    line_filter: set[int] | None = None,
 ) -> None:
     """Core vibecheck command: analyze a single file."""
     # Load config
@@ -192,7 +279,7 @@ def _run_file_analysis(
 
     # Step 1: Rule-based detection
     try:
-        result = detect(filepath)
+        result = detect(filepath, custom_content=custom_content, line_filter=line_filter)
     except FileNotFoundError:
         rich_console.print(f"[red]Error:[/red] File not found: {filepath}")
         raise typer.Exit(1)
@@ -213,13 +300,19 @@ def _run_file_analysis(
     # Step 2: Check concept memory
     concept_statuses = get_memory_context(result.concepts)
 
-    # Step 3: LLM explanation (if available)
+    # Step 3: LLM explanation (if available and not in fast mode)
     llm_response = None
-    if is_llm_available():
+    if not fast and is_llm_available():
         try:
-            code = Path(filepath).read_text(encoding="utf-8")
+            if custom_content is not None:
+                code = custom_content
+            else:
+                code = Path(filepath).read_text(encoding="utf-8")
         except UnicodeDecodeError:
-            code = Path(filepath).read_text(encoding="latin-1")
+            if custom_content is None:
+                code = Path(filepath).read_text(encoding="latin-1")
+            else:
+                code = custom_content
 
         issues_text = _format_issues_for_llm(result.issues)
         llm_response = explain_issues(
@@ -239,7 +332,7 @@ def _run_file_analysis(
 
     # Step 5: Render output
     if json_output:
-        _output_json(result, concept_statuses)
+        _output_json(result, llm_response, concept_statuses)
         return
 
     render_file_report(
