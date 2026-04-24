@@ -123,6 +123,7 @@ def main(
     ),
     staged: bool = typer.Option(False, "--staged", "-s", help="Only scan files currently staged in Git (git add)"),
     fast: bool = typer.Option(False, "--fast", help="Run rule-based detection only (no AI, extremely fast)"),
+    chat: bool = typer.Option(False, "--chat", "-c", help="Start an interactive chat session after scanning"),
     learn: bool = typer.Option(False, "--learn", help="Deeper concept explanations with examples"),
     senior: bool = typer.Option(False, "--senior", help="Add senior dev perspective"),
     risks: bool = typer.Option(False, "--risks", help="Add extended risk analysis"),
@@ -158,7 +159,7 @@ def main(
 
     # --- Staged scan ---
     if staged:
-        _run_staged_scan(learn=learn, senior=senior, risks=risks, json_output=json_output, fast=fast)
+        _run_staged_scan(learn=learn, senior=senior, risks=risks, json_output=json_output, fast=fast, chat=chat)
         return
         
     # --- Need a file from here ---
@@ -180,7 +181,7 @@ def main(
     # --- Core file analysis ---
     _run_file_analysis(
         str(filepath), learn=learn, senior=senior, risks=risks,
-        json_output=json_output, fast=fast
+        json_output=json_output, fast=fast, chat=chat
     )
 
 def _get_staged_content_and_lines(filepath: str) -> tuple[str, set[int]]:
@@ -222,6 +223,7 @@ def _run_staged_scan(
     risks: bool = False,
     json_output: bool = False,
     fast: bool = False,
+    chat: bool = False,
 ) -> None:
     """Scan only files that are staged in git."""
     import subprocess
@@ -253,9 +255,59 @@ def _run_staged_scan(
             
         _run_file_analysis(
             filepath, learn=learn, senior=senior, risks=risks, 
-            json_output=json_output, fast=fast,
+            json_output=json_output, fast=fast, chat=chat,
             custom_content=content, line_filter=line_filter
         )
+
+def _run_interactive_chat(filepath: str, code: str, initial_response: dict) -> None:
+    """Run an interactive chat session using litellm."""
+    from rich.prompt import Prompt
+    from vibecheck.core.llm import get_model, SYSTEM_PROMPT
+    import litellm
+    import os
+    
+    # In enterprise mode, verify we have Ollama before starting chat
+    if os.environ.get("VIBECHECK_ENTERPRISE_MODE") == "1" and not os.environ.get("OLLAMA_API_BASE"):
+        rich_console.print("\n[yellow]Notice:[/yellow] Enterprise mode requires OLLAMA_API_BASE for chat.")
+        return
+
+    rich_console.print("\n[bold bright_blue]💬 VibeCheck Interactive Mode (Type 'exit' to quit)[/bold bright_blue]")
+    rich_console.print("[dim]Ask anything about this file, the detected issues, or concepts.[/dim]\n")
+    
+    messages = [
+        {"role": "system", "content": SYSTEM_PROMPT + "\n\nYou are an interactive tutor. Keep answers short and friendly."},
+        {"role": "user", "content": f"I just analyzed this file: {filepath}\nCode:\n```\n{code[:3000]}\n```\nHere is your summary so far:\n{initial_response.get('summary', '')}\n{initial_response.get('explanations', '')}"},
+        {"role": "assistant", "content": "I'm ready. What would you like to know about this code?"}
+    ]
+    
+    while True:
+        try:
+            user_input = Prompt.ask("[bold green]You[/bold green]")
+            if user_input.lower() in ('exit', 'quit', 'q'):
+                rich_console.print("[dim]Ending chat session. Bye![/dim]")
+                break
+                
+            messages.append({"role": "user", "content": user_input})
+            
+            with rich_console.status("[bold cyan]VibeCheck is thinking...[/bold cyan]"):
+                response = litellm.completion(
+                    model=get_model(),
+                    messages=messages,
+                    max_tokens=800,
+                    temperature=0.4,
+                )
+            
+            answer = response.choices[0].message.content.strip()
+            rich_console.print(f"\n[bold purple]VibeCheck[/bold purple]:\n{answer}\n")
+            messages.append({"role": "assistant", "content": answer})
+            
+        except KeyboardInterrupt:
+            rich_console.print("\n[dim]Ending chat session. Bye![/dim]")
+            break
+        except Exception as e:
+            rich_console.print(f"[red]Error communicating with AI:[/red] {e}")
+            break
+
 
 def _run_file_analysis(
     filepath: str,
@@ -264,6 +316,7 @@ def _run_file_analysis(
     risks: bool = False,
     json_output: bool = False,
     fast: bool = False,
+    chat: bool = False,
     custom_content: str | None = None,
     line_filter: set[int] | None = None,
 ) -> None:
@@ -333,18 +386,20 @@ def _run_file_analysis(
     # Step 5: Render output
     if json_output:
         _output_json(result, llm_response, concept_statuses)
-        return
-
-    render_file_report(
-        filepath=filepath,
-        issues=result.issues,
-        concepts=result.concepts,
-        concept_statuses=concept_statuses,
-        llm_response=llm_response,
-        learn_mode=learn,
-        senior_mode=senior,
-        risks_mode=risks,
-    )
+    else:
+        render_file_report(
+            filepath=filepath,
+            issues=result.issues,
+            concepts=result.concepts,
+            concept_statuses=concept_statuses,
+            llm_response=llm_response,
+            learn_mode=learn,
+            senior_mode=senior,
+            risks_mode=risks,
+        )
+        
+    if chat and not fast and llm_response:
+        _run_interactive_chat(filepath, code, llm_response)
 
 
 def _run_error_diagnosis(filepath: str, error_message: str) -> None:

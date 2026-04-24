@@ -141,7 +141,8 @@ vibecheck --staged --fast
 ### Optional flags
 
 ```bash
-vibecheck file.py --learn     # Deeper concept explanations with examples
+vibecheck file.py --learn     # Absolute Beginner Mode (ELI5 analogies & examples)
+vibecheck file.py --chat      # Interactive AI Tutor REPL session after scanning
 vibecheck file.py --senior    # What a senior dev would change
 vibecheck file.py --risks     # Extended risk analysis
 vibecheck file.py --json      # Output results as JSON
@@ -149,10 +150,29 @@ vibecheck file.py --json      # Output results as JSON
 
 ---
 
+## The "Zero-Friction" Workflow
+
+### 1. Inline Ignore (Suppress False Positives)
+Senior Devs hate noise. If VibeCheck flags a safe line, silence it forever by adding `# vibecheck-disable` (Python) or `// vibecheck-disable` (JS) to the line or the line directly above it.
+
+```python
+# vibecheck-disable
+LIMIT = 14  # This magic number is intended and will be ignored by VibeCheck
+```
+
+### 2. Interactive Tutor (`--chat`)
+If the explanation isn't clear, start an interactive session.
+```bash
+vibecheck src/app.py --learn --chat
+```
+VibeCheck will open a `Prompt` in your terminal where you can ask follow-up questions like *"Wait, what does the recipe represent in that analogy?"*
+
+---
+
 ## Project-Specific Rules (Continuous Learning)
 
 vibecheck learns your team's specific coding guidelines over time. 
-Create a `.vibecheck_rules.md` file in your project root:
+Create a `.vibecheck_rules.md` file anywhere in your project:
 
 ```markdown
 # VibeCheck Project Guidelines
@@ -163,6 +183,8 @@ Create a `.vibecheck_rules.md` file in your project root:
 
 vibecheck will automatically inject these rules as context, acting like a Virtual Senior Developer that enforces your specific project culture.
 
+**Monorepo Support:** VibeCheck searches hierarchically. If you have different `.vibecheck_rules.md` files in `frontend/` and `backend/`, it will combine them up to 5 levels deep.
+
 ---
 
 ## Commands
@@ -170,6 +192,7 @@ vibecheck will automatically inject these rules as context, acting like a Virtua
 | Command | Description |
 |---|---|
 | `vibecheck <file>` | Analyze a file for issues and concepts |
+| `vibecheck <file> --chat` | Start interactive chat session after scan |
 | `vibecheck --staged` | Analyze only files staged for commit |
 | `vibecheck --staged --fast`| Analyze staged files with local rules only (No AI) |
 | `vibecheck <file> --json` | Output results as JSON (for CI/CD) |

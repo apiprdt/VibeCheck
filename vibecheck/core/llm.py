@@ -155,30 +155,44 @@ def explain_issues(
     if not is_llm_available():
         return {"summary": "", "explanations": "", "senior": "", "risks": ""}
 
-    # Check for Project Specific Guidelines with Safety Limit
+    # Check for Project Specific Guidelines with Monorepo Support (Hierarchical)
     project_rules = ""
-    rules_path = Path(".vibecheck_rules.md")
-    if rules_path.exists():
+    current_dir = Path(filepath).resolve().parent
+    rules_files = []
+    
+    # Traverse up to 5 levels to find rules (stops at .git)
+    for _ in range(5):
+        rules_path = current_dir / ".vibecheck_rules.md"
+        if rules_path.exists():
+            rules_files.append(rules_path)
+        if current_dir.parent == current_dir or (current_dir / ".git").exists():
+            break
+        current_dir = current_dir.parent
+        
+    # Combine rules from top-level to local-level
+    combined_rules = []
+    for r_path in reversed(rules_files):
         try:
-            with open(rules_path, "r", encoding="utf-8") as f:
-                raw_rules = f.read()
-                
-            # SAFETY 1: Token Limit Safeguard (Max ~800 tokens / 3500 chars)
-            if len(raw_rules) > 3500:
-                project_rules = raw_rules[:3500] + "\n\n[WARNING: .vibecheck_rules.md is too large and was truncated. Please clean up old rules.]"
-            else:
-                project_rules = raw_rules
-                
-            # SAFETY 2: Basic Language Filter (Very naive, but effective)
-            # If scanning a .py file, hint the LLM to prioritize Python rules.
-            ext = Path(filepath).suffix
-            if ext in [".py"]:
-                project_rules = f"(Priority: Focus on Python/Backend rules)\n{project_rules}"
-            elif ext in [".js", ".jsx", ".ts", ".tsx"]:
-                project_rules = f"(Priority: Focus on Javascript/Frontend rules)\n{project_rules}"
-                
+            with open(r_path, "r", encoding="utf-8") as f:
+                combined_rules.append(f"--- Rules from {r_path.parent.name}/{r_path.name} ---\n" + f.read())
         except Exception:
             pass
+            
+    raw_rules = "\n\n".join(combined_rules)
+    if raw_rules:
+        # SAFETY 1: Token Limit Safeguard (Max ~1000 tokens / 4000 chars)
+        if len(raw_rules) > 4000:
+            project_rules = raw_rules[:4000] + "\n\n[WARNING: .vibecheck_rules.md files are too large and were truncated.]"
+        else:
+            project_rules = raw_rules
+            
+        # SAFETY 2: Basic Language Filter
+        ext = Path(filepath).suffix
+        if ext in [".py"]:
+            project_rules = f"(Priority: Focus on Python/Backend rules)\n{project_rules}"
+        elif ext in [".js", ".jsx", ".ts", ".tsx"]:
+            project_rules = f"(Priority: Focus on Javascript/Frontend rules)\n{project_rules}"
+
 
     # Check Cache first
     cache_key = {
@@ -213,6 +227,13 @@ def explain_issues(
         prompt += f"## PROJECT-SPECIFIC GUIDELINES:\n{project_rules}\n(Ensure the code follows these local rules. If not, point it out as a CRITICAL/WARN issue!)\n\n"
 
     prompt += "Respond with:\n### SUMMARY\n(3-5 sentences)\n### EXPLANATIONS\n(issues + concepts)"
+    
+    if learn_mode:
+        prompt += "\n\n[ABSOLUTE BEGINNER MODE ACTIVE]\n"
+        prompt += "1. Explain all issues and concepts using SIMPLE REAL-WORLD ANALOGIES (e.g., a restaurant, a house, a locked door).\n"
+        prompt += "2. Assume the user has ZERO computer science background. DO NOT use technical jargon like 'SQL Injection', 'AST', or 'Middleware' without explaining what it means in everyday language.\n"
+        prompt += "3. Always provide a tiny, clear 'Before (Bad)' and 'After (Good)' code example.\n"
+        
     if senior_mode:
         prompt += "\n### SENIOR PERSPECTIVE\n(architecture suggestions)"
     if risks_mode:

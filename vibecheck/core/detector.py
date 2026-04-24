@@ -838,6 +838,20 @@ def detect(filepath: str, custom_content: str | None = None, line_filter: set[in
     if line_filter is not None:
         all_issues = [i for i in all_issues if i.line_number in line_filter]
 
+    # Filter out ignored lines (vibecheck-disable)
+    filtered_issues = []
+    for i in all_issues:
+        content = i.line_content.lower()
+        if "vibecheck-disable" in content:
+            continue
+        # Also check the line above if it exists
+        if i.line_number > 1:
+            prev_line = lines[i.line_number - 2].lower()
+            if "vibecheck-disable" in prev_line:
+                continue
+        filtered_issues.append(i)
+    all_issues = filtered_issues
+
     # Extract concepts
     concepts = _extract_concepts(lines, all_issues, language)
 
