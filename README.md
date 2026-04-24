@@ -1,8 +1,25 @@
-# vibecheck
+<p align="center">
+  <img src="assets/logo.png" alt="VibeCheck Logo" width="400">
+</p>
+
+<h2 align="center">"VibeCheck: The Virtual Senior Developer in Your Terminal"</h2>
+
+<p align="center">
+  <a href="https://pypi.org/project/vibecheck-ai-tool/"><img src="https://img.shields.io/pypi/v/vibecheck-ai-tool?color=black&labelColor=gray&style=for-the-badge" alt="PyPI"></a>
+  <a href="https://pypi.org/project/vibecheck-ai-tool/"><img src="https://img.shields.io/pypi/pyversions/vibecheck-ai-tool?color=black&labelColor=gray&style=for-the-badge" alt="Python Versions"></a>
+  <a href="https://github.com/apiprdt/vibecheck/blob/main/LICENSE"><img src="https://img.shields.io/github/license/apiprdt/vibecheck?color=black&labelColor=gray&style=for-the-badge" alt="License"></a>
+</p>
+<p align="center">
+  <a href="https://github.com/apiprdt/vibecheck"><img src="https://img.shields.io/badge/PRs-Welcome-black?labelColor=gray&style=for-the-badge" alt="PRs Welcome"></a>
+  <a href="https://github.com/apiprdt/vibecheck"><img src="https://img.shields.io/github/stars/apiprdt/vibecheck?color=black&labelColor=gray&style=for-the-badge" alt="Stars"></a>
+  <a href="https://x.com/apiprdt"><img src="https://img.shields.io/badge/Twitter-Follow-black?logo=x&logoColor=white&labelColor=gray&style=for-the-badge" alt="Twitter"></a>
+</p>
+
+---
 
 **Understand the code your AI wrote.**
 
-AI tools make you faster. vibecheck makes sure you actually understand what you're shipping. It tracks which concepts you've learned so you depend less on AI over time.
+AI tools make you faster. vibecheck makes sure you actually understand what you're shipping. It acts as an interactive tutor and a strict code auditor directly in your terminal, tracking what you've learned so you depend less on AI over time.
 
 ---
 
