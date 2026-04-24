@@ -18,7 +18,7 @@ from vibecheck.core.severity import Severity, SEVERITY_CONFIG, ICONS, sort_issue
 from vibecheck.core.detector import Issue
 
 # Force terminal mode to avoid legacy Windows renderer issues with Unicode
-console = Console(width=88, force_terminal=True)
+console = Console(width=88)
 
 
 def _severity_panel(title: str, content: str, severity: Severity) -> Panel:
