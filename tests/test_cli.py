@@ -6,9 +6,15 @@ import json
 import os
 
 
-def _run_vibecheck(*args):
+def _run_vibecheck(*args) -> subprocess.CompletedProcess:
     """Run vibecheck as a subprocess and return stdout."""
-    env = {**os.environ, "PYTHONIOENCODING": "utf-8"}
+    # Force no color and utf-8 for consistent test results
+    env = {
+        **os.environ,
+        "PYTHONIOENCODING": "utf-8",
+        "NO_COLOR": "1",
+        "FORCE_COLOR": "0"
+    }
     result = subprocess.run(
         [sys.executable, "-m", "vibecheck"] + list(args),
         capture_output=True,
