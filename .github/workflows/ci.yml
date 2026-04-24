@@ -29,22 +29,22 @@ jobs:
           pip install pytest
 
       - name: Run tests
-        run: pytest tests/ -v --tb=short
+        run: python -m pytest tests/ -v --tb=short
 
       - name: Smoke test - version
-        run: vibecheck --version
+        run: python -m vibecheck --version
 
       - name: Smoke test - analyze Python
-        run: vibecheck examples/python_bad.py
+        run: python -m vibecheck examples/python_bad.py
 
       - name: Smoke test - analyze JavaScript
-        run: vibecheck examples/node_bad.js
+        run: python -m vibecheck examples/node_bad.js
 
       - name: Smoke test - analyze Go
-        run: vibecheck examples/go_bad.go
+        run: python -m vibecheck examples/go_bad.go
 
       - name: Smoke test - JSON output
-        run: vibecheck examples/python_bad.py --json
+        run: python -m vibecheck examples/python_bad.py --json
 
       - name: Smoke test - debt scan
-        run: vibecheck --debt examples
+        run: python -m vibecheck --debt examples
