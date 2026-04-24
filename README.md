@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/logo.png" alt="VibeCheck Logo" width="400">
+  <img src="assets/logo.jpg" alt="VibeCheck Logo" width="400">
 </p>
 
 <h2 align="center">"VibeCheck: The Virtual Senior Developer in Your Terminal"</h2>
