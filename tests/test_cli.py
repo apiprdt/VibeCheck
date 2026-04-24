@@ -4,24 +4,30 @@ import subprocess
 import sys
 import json
 import os
+import re
+
+
+def _strip_ansi(text: str) -> str:
+    """Remove ANSI escape sequences from a string."""
+    ansi_escape = re.compile(r'\x1b\[[0-9;]*[mGKH]')
+    return ansi_escape.sub('', text)
 
 
 def _run_vibecheck(*args) -> subprocess.CompletedProcess:
-    """Run vibecheck as a subprocess and return stdout."""
-    # Force no color and utf-8 for consistent test results
-    env = {
-        **os.environ,
-        "PYTHONIOENCODING": "utf-8",
-        "NO_COLOR": "1",
-        "FORCE_COLOR": "0"
-    }
+    """Run vibecheck as a subprocess and return clean stdout/stderr."""
+    env = {**os.environ, "PYTHONIOENCODING": "utf-8"}
     result = subprocess.run(
         [sys.executable, "-m", "vibecheck"] + list(args),
         capture_output=True,
         env=env,
         encoding="utf-8",
-        errors="replace",
+        errors="ignore"
     )
+    # Clean ANSI codes from output
+    if result.stdout:
+        result.stdout = _strip_ansi(result.stdout)
+    if result.stderr:
+        result.stderr = _strip_ansi(result.stderr)
     return result
 
 
