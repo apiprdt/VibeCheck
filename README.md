@@ -12,7 +12,8 @@
 <p align="center">
   <a href="https://github.com/apiprdt/vibecheck"><img src="https://img.shields.io/badge/PRs-Welcome-black?labelColor=gray&style=for-the-badge" alt="PRs Welcome"></a>
   <a href="https://github.com/apiprdt/vibecheck"><img src="https://img.shields.io/github/stars/apiprdt/vibecheck?color=black&labelColor=gray&style=for-the-badge" alt="Stars"></a>
-  <a href="https://x.com/apiprdt"><img src="https://img.shields.io/badge/Twitter-Follow-black?logo=x&logoColor=white&labelColor=gray&style=for-the-badge" alt="Twitter"></a>
+  <a href="https://x.com/AfifErditaa"><img src="https://img.shields.io/badge/X%20(Twitter)-@AfifErditaa-black?logo=x&logoColor=white&labelColor=gray&style=for-the-badge" alt="Twitter"></a>
+  <a href="https://instagram.com/afiferdita"><img src="https://img.shields.io/badge/Instagram-@afiferdita-black?logo=instagram&logoColor=white&labelColor=gray&style=for-the-badge" alt="Instagram"></a>
 </p>
 
 ---
