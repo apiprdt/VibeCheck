@@ -1,0 +1,22 @@
+# vibecheck configuration
+# Place this file at ~/.vibecheck/config.yaml
+
+# LLM model to use for explanations (default: gpt-4o-mini)
+# model: gpt-4o-mini
+
+# Severity filter: only show issues at this level or above
+# Options: critical, warn, info (default: show all)
+# severity_filter: warn
+
+# Patterns to ignore (won't be reported)
+# ignore_patterns:
+#   - Magic Number
+#   - Missing Docstring
+
+# Files to ignore (glob patterns)
+# ignore_files:
+#   - "*.test.js"
+#   - "*.spec.ts"
+#   - "*_test.go"
+#   - "test_*.py"
+#   - "conftest.py"
