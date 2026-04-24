@@ -10,7 +10,7 @@ def _run_vibecheck(*args):
     """Run vibecheck as a subprocess and return stdout."""
     env = {**os.environ, "PYTHONIOENCODING": "utf-8"}
     result = subprocess.run(
-        [sys.executable, "-m", "vibecheck.main"] + list(args),
+        [sys.executable, "-m", "vibecheck"] + list(args),
         capture_output=True,
         env=env,
         encoding="utf-8",
@@ -64,7 +64,8 @@ class TestCLIAnalysis:
 class TestCLIJsonOutput:
     def test_json_output_valid(self):
         result = _run_vibecheck("examples/python_bad.py", "--json")
-        data = json.loads(result.stdout)
+        stdout = (result.stdout or "").strip()
+        data = json.loads(stdout)
         assert "filepath" in data
         assert "issues" in data
         assert "concepts" in data
@@ -72,13 +73,15 @@ class TestCLIJsonOutput:
 
     def test_json_has_issues(self):
         result = _run_vibecheck("examples/python_bad.py", "--json")
-        data = json.loads(result.stdout)
+        stdout = (result.stdout or "").strip()
+        data = json.loads(stdout)
         assert data["summary"]["critical"] > 0
         assert data["summary"]["total"] > 0
 
     def test_json_issue_structure(self):
         result = _run_vibecheck("examples/python_bad.py", "--json")
-        data = json.loads(result.stdout)
+        stdout = (result.stdout or "").strip()
+        data = json.loads(stdout)
         issue = data["issues"][0]
         assert "pattern" in issue
         assert "severity" in issue
