@@ -1,5 +1,6 @@
 """Severity levels for detected issues."""
 
+import os
 import sys
 from enum import Enum
 
@@ -14,6 +15,9 @@ class Severity(str, Enum):
 
 def _supports_unicode() -> bool:
     """Check if the terminal supports unicode/emoji output."""
+    # Headless CI runners often fail with complex emojis
+    if os.environ.get("GITHUB_ACTIONS"):
+        return False
     try:
         if sys.platform == "win32":
             # Try encoding a test emoji — if it fails, use ASCII
