@@ -28,16 +28,16 @@ VibeCheck is a deterministic CLI security auditing tool built to eliminate the "
 
 <table align="center">
   <tr>
-    <td align="center"><b>1. Project-Specific Rules</b><br/><img src="https://raw.githubusercontent.com/apiprdt/VibeCheck/main/assets/vibe1.png" width="400"></td>
-    <td align="center"><b>2. Security Audit</b><br/><img src="https://raw.githubusercontent.com/apiprdt/VibeCheck/main/assets/vibe2.png" width="400"></td>
+    <td align="center"><b>1. Project-Specific Rules</b><br/><img src="assets/vibe1.png" width="400"></td>
+    <td align="center"><b>2. Security Audit</b><br/><img src="assets/vibe2.png" width="400"></td>
   </tr>
   <tr>
-    <td align="center"><b>3. Educational Analogies (ELI5)</b><br/><img src="https://raw.githubusercontent.com/apiprdt/VibeCheck/main/assets/vibe3.png" width="400"></td>
-    <td align="center"><b>4. Security Deep-Dive</b><br/><img src="https://raw.githubusercontent.com/apiprdt/VibeCheck/main/assets/vibe4.png" width="400"></td>
+    <td align="center"><b>3. Educational Analogies (ELI5)</b><br/><img src="assets/vibe3.png" width="400"></td>
+    <td align="center"><b>4. Security Deep-Dive</b><br/><img src="assets/vibe4.png" width="400"></td>
   </tr>
   <tr>
-    <td align="center"><b>5. Concept Memory Tracking</b><br/><img src="https://raw.githubusercontent.com/apiprdt/VibeCheck/main/assets/vibe5.png" width="400"></td>
-    <td align="center"><b>6. AI Fix Suggestions</b><br/><img src="https://raw.githubusercontent.com/apiprdt/VibeCheck/main/assets/vibe6.png" width="400"></td>
+    <td align="center"><b>5. Concept Memory Tracking</b><br/><img src="assets/vibe5.png" width="400"></td>
+    <td align="center"><b>6. AI Fix Suggestions</b><br/><img src="assets/vibe6.png" width="400"></td>
   </tr>
 </table>
 
