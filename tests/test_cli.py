@@ -35,12 +35,12 @@ class TestCLIBasic:
     def test_version(self):
         result = _run_vibecheck("--version")
         assert "vibecheck" in (result.stdout or "")
-        assert "0.1.0" in (result.stdout or "")
+        assert "1.1.0" in (result.stdout or "")
 
     def test_help(self):
         result = _run_vibecheck("--help")
         stdout = result.stdout or ""
-        assert "Analyze code files" in stdout
+        assert "Deterministic CLI security auditing" in stdout or "Analyze code files" in stdout
         assert "--error" in stdout
         assert "--debt" in stdout
         assert "--json" in stdout

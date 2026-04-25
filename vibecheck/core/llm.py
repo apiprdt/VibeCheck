@@ -40,7 +40,7 @@ Your job: explain the detected issues and teach the new concepts. Do not re-dete
 CONFIG_PATH = Path.home() / ".vibecheck" / "config.yaml"
 
 
-def _load_config() -> dict:
+def load_config() -> dict:
     """Load config from ~/.vibecheck/config.yaml if it exists."""
     if CONFIG_PATH.exists():
         try:
@@ -65,7 +65,7 @@ def get_model() -> str:
     if env_model:
         model = env_model
     else:
-        config = _load_config()
+        config = load_config()
         model = config.get("model")
         
         # Smart Defaulting based on available keys

@@ -6,11 +6,14 @@ only for explanation after issues are found.
 
 from __future__ import annotations
 
+import logging
 import re
 from dataclasses import dataclass, field
 from pathlib import Path
 
 from vibecheck.core.severity import Severity
+
+logger = logging.getLogger(__name__)
 
 
 # ---------------------------------------------------------------------------
@@ -1163,9 +1166,8 @@ def detect(filepath: str, custom_content: str | None = None, line_filter: set[in
         try:
             issues = check_fn(lines, language)
             all_issues.extend(issues)
-        except Exception:
-            # Don't let one failing check break everything
-            pass
+        except Exception as e:
+            logger.debug("Check %s failed: %s", check_fn.__name__, e)
 
     # Filter by line numbers if provided
     if line_filter is not None:
@@ -1237,8 +1239,8 @@ def detect_fast(filepath: str) -> DetectionResult:
         try:
             issues = check_fn(lines, language)
             all_issues.extend(issues)
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug("Fast check %s failed: %s", check_fn.__name__, e)
 
     return DetectionResult(
         filepath=filepath,
@@ -1277,8 +1279,8 @@ def detect_ai_patterns(filepath: str, custom_content: str | None = None) -> AIAu
             for issue in found:
                 issue.is_ai_pattern = True
             all_issues.extend(found)
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug("AI check %s failed: %s", check_fn.__name__, e)
 
     # De-duplicate by line number + pattern name
     seen = set()

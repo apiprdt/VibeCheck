@@ -6,6 +6,7 @@ Entry point for all vibecheck commands.
 from __future__ import annotations
 
 import json
+import logging
 import os
 import sys
 from pathlib import Path
@@ -25,15 +26,16 @@ from vibecheck.core.explainer import (
     render_memory_reset, render_hook_output, render_ai_audit_report,
     console as rich_console,
 )
-from vibecheck.core.llm import explain_issues, explain_error, analyze_debt, is_llm_available, _load_config
+from vibecheck.core.llm import explain_issues, explain_error, analyze_debt, is_llm_available, load_config
 
 app = typer.Typer(
     name="vibecheck",
-    help="Understand the code your AI wrote.",
+    help="Deterministic CLI security auditing — catch what Claude and Copilot miss.",
     add_completion=False,
     no_args_is_help=True,
 )
 err_console = Console(stderr=True)
+logger = logging.getLogger(__name__)
 
 # Supported file extensions for scanning
 SCAN_EXTENSIONS = {
@@ -411,7 +413,7 @@ def _run_file_analysis(
 ) -> None:
     """Core vibecheck command: analyze a single file."""
     # Load config
-    config = _load_config()
+    config = load_config()
 
     # Check if file should be ignored
     if _should_ignore_file(filepath, config):
