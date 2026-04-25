@@ -72,7 +72,7 @@ def get_model() -> str:
         # Smart Defaulting based on available keys
         if not model:
             if os.environ.get("GROQ_API_KEY"):
-                model = "groq/llama-3.3-70b-versatile"
+                model = "groq/llama3-8b-8192"
             elif os.environ.get("ANTHROPIC_API_KEY"):
                 model = "claude-3-5-sonnet-20240620"
             elif os.environ.get("GOOGLE_API_KEY") or os.environ.get("GEMINI_API_KEY"):
