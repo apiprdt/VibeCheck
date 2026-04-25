@@ -21,7 +21,7 @@
 
 ### **AI-Powered Code Auditing with a "Senior Developer" Vibe.**
 
-VibeCheck is an interactive CLI tool designed to help developers (from absolute beginners to senior engineers) understand, audit, and secure their codebase. It combines strict rule-based scanning with advanced AI explanations to ensure you don't just fix bugs—you learn from them.
+VibeCheck is an interactive CLI tool designed to help developers understand, audit, and secure their codebase. It combines strict rule-based scanning with advanced AI explanations to ensure you don't just fix bugs—you learn from them.
 
 ---
 
@@ -30,19 +30,19 @@ VibeCheck is an interactive CLI tool designed to help developers (from absolute 
 <table align="center">
   <tr>
     <td align="center"><b>1. Project-Specific Rules</b><br/><img src="assets/vibe1.png" width="400"></td>
-    <td align="center"><b>2. Rule-Based Audit</b><br/><img src="assets/vibe2.png" width="400"></td>
+    <td align="center"><b>2. Security Audit</b><br/><img src="assets/vibe2.png" width="400"></td>
   </tr>
   <tr>
-    <td align="center"><b>3. Educational Analogies</b><br/><img src="assets/vibe3.png" width="400"></td>
+    <td align="center"><b>3. Educational Analogies (ELI5)</b><br/><img src="assets/vibe3.png" width="400"></td>
     <td align="center"><b>4. Security Deep-Dive</b><br/><img src="assets/vibe4.png" width="400"></td>
   </tr>
   <tr>
-    <td align="center"><b>5. Interactive Chat</b><br/><img src="assets/vibe6.png" width="400"></td>
-    <td align="center"><b>6. Concept Memory</b><br/><img src="assets/vibe7.png" width="400"></td>
+    <td align="center"><b>5. Concept Memory Tracking</b><br/><img src="assets/vibe5.png" width="400"></td>
+    <td align="center"><b>6. AI Fix Suggestions</b><br/><img src="assets/vibe6.png" width="400"></td>
   </tr>
   <tr>
-    <td align="center"><b>7. Fix Suggestions</b><br/><img src="assets/vibe8.png" width="400"></td>
-    <td align="center"><b>Ready to Ship!</b><br/><img src="assets/logo.jpg" width="400"></td>
+    <td align="center"><b>7. Interactive Chat Mode</b><br/><img src="assets/vibe7.png" width="400"></td>
+    <td align="center"><b>Ready for Launch</b><br/><img src="assets/logo.jpg" width="400"></td>
   </tr>
 </table>
 
@@ -72,7 +72,6 @@ pip install vibecheck-ai-tool
 ```
 
 ### 2. Configure API Key
-VibeCheck supports OpenAI, Anthropic, and Groq (recommended for speed).
 ```powershell
 $env:GROQ_API_KEY = "your-gsk-key"
 ```
@@ -85,9 +84,9 @@ vibecheck examples/python_bad.py --learn
 ---
 
 ## 👨‍💻 Developed by a 16-Year-Old Creator
-Created in 24 hours to prove that AI tools should focus on **education**, not just automation. VibeCheck is built for the new era of "Vibe Coding" where understanding is the ultimate superpower.
+Created in 24 hours to prove that AI tools should focus on **education**, not just automation. Architected & Maintained by [Afif Erdita](https://github.com/apiprdt).
 
 ---
 
 ## 📄 License
-MIT License. Built with ❤️ by [Afif Erdita](https://github.com/apiprdt).
+MIT License.
