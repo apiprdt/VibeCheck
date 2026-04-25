@@ -1,6 +1,6 @@
-# VibeCheck Detection Coverage
+# VibeCheck Detection Coverage (April 2026 Update)
 
-VibeCheck's core engine uses deterministic, rule-based pattern matching. Unlike LLMs that produce probabilistic output, VibeCheck returns the **exact same result every time** it runs against the same code.
+VibeCheck's core engine uses deterministic, rule-based pattern matching to mitigate the **Agentic Failure Patterns** observed throughout 2025 and early 2026. Unlike LLMs that produce probabilistic output, VibeCheck returns the **exact same result every time** it runs against the same code.
 
 This page documents exactly what VibeCheck detects and at what severity level.
 

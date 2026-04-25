@@ -18,9 +18,9 @@
 
 ---
 
-### **AI-Powered Code Auditing with a "Senior Developer" Vibe.**
+### **The AI Code Safety Firewall for the Agentic Era (April 2026)**
 
-VibeCheck is a deterministic CLI security auditing tool that catches the patterns **Claude, Copilot, and ChatGPT consistently get wrong**. It combines a strict rule-based engine (no hallucinations, same result every time) with AI-powered explanations to ensure you don't just find bugs — you understand and fix them.
+VibeCheck is a deterministic CLI security auditing tool built to mitigate the "AI Hallucination Debt" of 2025-2026. It catches the patterns **Claude, Copilot, and GPT-5 consistently get wrong**. It combines a strict rule-based engine (no hallucinations, same result every time) with AI-powered explanations to ensure you don't just find bugs — you understand and fix them.
 
 ---
 
