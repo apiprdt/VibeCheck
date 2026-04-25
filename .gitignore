@@ -43,3 +43,10 @@ htmlcov/
 # Distribution
 *.tar.gz
 *.whl
+
+# VibeCheck Cache and Build Garbage
+.vibecheck/cache/
+build/
+dist/
+*.egg-info/
+

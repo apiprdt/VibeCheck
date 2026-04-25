@@ -25,6 +25,7 @@ Tone rules:
 - Never say "your AI generated this"
 - If code is good: say so explicitly first
 - Max 3-5 sentences per concept explanation
+- Always use Professional, Standard English
 - Always include code example when showing a fix
 
 You will receive:

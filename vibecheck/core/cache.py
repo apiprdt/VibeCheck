@@ -10,8 +10,11 @@ from vibecheck import __version__
 class VibeCache:
     """Manages caching of LLM responses to improve performance and reduce costs."""
 
-    def __init__(self, cache_dir: str = ".vibecheck/cache"):
-        self.cache_dir = Path(cache_dir)
+    def __init__(self, cache_dir: Path | None = None):
+        if cache_dir is None:
+            self.cache_dir = Path.home() / ".vibecheck" / "cache"
+        else:
+            self.cache_dir = Path(cache_dir)
         self.cache_dir.mkdir(parents=True, exist_ok=True)
 
     def _generate_key(self, **kwargs) -> str:
