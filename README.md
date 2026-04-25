@@ -50,41 +50,67 @@ VibeCheck is an interactive CLI tool designed to help developers understand, aud
 pip install vibecheck-ai-tool
 ```
 
-### 2. Run Your First Audit
+### 2. Basic Audit
+Scan any file and get AI-powered explanations:
 ```bash
-vibecheck app.py --learn
+vibecheck app.py
 ```
 
 ---
 
-## 🛠️ Advanced Usage (The "Pro" Vibe)
+## 💡 Core Modes
 
-### 🩺 **Error Diagnosis Mode**
-Stop guessing why your code crashed. Paste an error message or stack trace, and VibeCheck will analyze it within the context of your file.
+VibeCheck adapts to how you want to work:
+
+*   **`--learn`**: (ELI5 Mode) Uses real-world analogies to explain complex security concepts.
+*   **`--chat`** or **`-c`**: Starts an interactive chat session with the "Senior Dev" about the file.
+*   **`--fast`**: Skip the AI and run only the rule-based engine (Instant & Free).
+
 ```bash
-vibecheck main.py --error "ValueError: invalid literal for int() with base 10"
+# Example: Learn & Chat at the same time
+vibecheck app.py --learn --chat
+```
+
+---
+
+## 🛠️ Pro Features (Senior Dev Tools)
+
+### 🩺 **Error Diagnosis**
+Paste a crash message to diagnose it within your code context.
+```bash
+vibecheck main.py --error "IndexError: list index out of range"
 ```
 
 ### 📉 **Knowledge Debt Scan**
-Identify "dark" parts of your repository that haven't been audited or contain hidden architectural risks.
+Scan your repo to see which files haven't been audited or have critical issues.
 ```bash
 vibecheck --debt ./src
 ```
 
-### 👔 **Senior Perspective & Risk Analysis**
-Get feedback on high-level architecture and production risks that static rules might miss.
+### 👔 **Senior & Risk Review**
+Get high-level architectural feedback and production risk analysis.
 ```bash
-vibecheck core/logic.py --senior --risks
+vibecheck logic.py --senior --risks
 ```
 
-### ⚓ **Git Integration**
-Only scan files that are currently staged (ready to commit):
+---
+
+## ⚓ Automation & CI/CD
+
+### **Git Integration**
+Scan only staged files before you commit:
 ```bash
 vibecheck --staged
 ```
-Install a pre-commit hook that automatically blocks commits containing **Critical** issues:
+Install a pre-commit hook:
 ```bash
 vibecheck --install-hook --fail-on-critical
+```
+
+### **CI/CD Support**
+Output results as JSON for easy integration with other tools:
+```bash
+vibecheck app.py --json
 ```
 
 ---
@@ -92,16 +118,16 @@ vibecheck --install-hook --fail-on-critical
 ## ✨ Key Features
 
 ### 🛡️ **Rule-Based Engine & Local Guidelines**
-VibeCheck uses a strict engine to catch SQL Injections, Hardcoded Credentials, and more. It also reads your **`.vibecheck_rules.md`** to enforce project-specific coding standards.
+VibeCheck uses a strict engine to catch SQL Injections, Hardcoded Credentials, and more. It reads your **`.vibecheck_rules.md`** to enforce project-specific standards.
 
 ### 🧠 **Smart Global Caching**
 VibeCheck caches every AI response locally (`~/.vibecheck/cache`). Subsequent scans of the same code are **instant and free**.
 
-### 🎓 **Pedagogical AI (ELI5)**
-Use **`--learn`** to get complex flaws explained through simple real-world analogies. Perfect for junior developers and students.
-
-### 💬 **Interactive Terminal Chat**
-Don't understand a fix? Launch **`--chat`** to have a direct conversation with the "Virtual Senior Developer" about your code.
+### 🧹 **Memory Management**
+VibeCheck remembers what you've learned. To start fresh:
+```bash
+vibecheck --reset-memory
+```
 
 ---
 
