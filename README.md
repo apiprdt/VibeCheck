@@ -72,8 +72,18 @@ pip install vibecheck-ai-tool
 ```
 
 ### 2. Configure API Key
+VibeCheck is **universal**. It automatically detects your provider.
+| Provider | Environment Variable | Default Model |
+| :--- | :--- | :--- |
+| **Groq** (Fastest) | `GROQ_API_KEY` | `llama-3.3-70b` |
+| **OpenAI** | `OPENAI_API_KEY` | `gpt-4o-mini` |
+| **Anthropic** | `ANTHROPIC_API_KEY` | `claude-3.5-sonnet` |
+| **Google** | `GOOGLE_API_KEY` | `gemini-1.5-pro` |
+| **Ollama** | `VIBECHECK_ENTERPRISE_MODE=1` | `ollama/llama3` |
+
 ```powershell
-$env:GROQ_API_KEY = "your-gsk-key"
+# Example for Groq
+$env:GROQ_API_KEY = "your-key-here"
 ```
 
 ### 3. Run Your First Audit
