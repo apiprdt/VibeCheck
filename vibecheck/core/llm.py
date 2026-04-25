@@ -136,7 +136,7 @@ def _call_llm(messages: list[dict[str, str]], **kwargs: Any) -> str:
         error_msg = str(e)
         # Provide helpful error messages for common issues
         if "api_key" in error_msg.lower() or "authentication" in error_msg.lower():
-            return "[LLM error: Invalid or missing API key. Check your OPENAI_API_KEY or ANTHROPIC_API_KEY.]"
+            return f"[LLM error: Invalid or missing API key. (Literal error: {error_msg})]"
         if "rate_limit" in error_msg.lower():
             return "[LLM error: Rate limit reached. Wait a moment and try again.]"
         if "connection" in error_msg.lower():
