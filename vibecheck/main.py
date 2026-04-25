@@ -116,11 +116,10 @@ def _output_json(result, llm_response: dict = None, concept_statuses: dict = Non
 
 
 
-@app.callback(invoke_without_command=True)
+@app.command()
 def main(
     ctx: typer.Context,
     file: Optional[str] = typer.Argument(None, help="File or directory to analyze"),
-    # ... rest
     error: Optional[str] = typer.Option(
         None, "--error", "-e", help="Error message to diagnose"
     ),
