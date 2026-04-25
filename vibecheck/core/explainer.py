@@ -14,7 +14,7 @@ from rich.text import Text
 from rich.markdown import Markdown
 from rich import box
 
-from vibecheck.core.severity import Severity, SEVERITY_CONFIG, ICONS, sort_issues
+from vibecheck.core.severity import Severity, SEVERITY_CONFIG, ICONS, sort_issues, _supports_unicode
 from vibecheck.core.detector import Issue
 
 # Force terminal mode to avoid legacy Windows renderer issues with Unicode
@@ -313,3 +313,96 @@ def render_memory_reset(count: int) -> None:
     else:
         console.print("  [dim]No concepts in memory to clear.[/dim]")
     console.print()
+
+
+def render_ai_audit_report(result: object) -> None:
+    """Render AI-pattern audit report with confidence scoring."""
+    from vibecheck.core.severity import Severity, sort_issues
+
+    console.print()
+    console.rule("[bold] vibecheck --ai-audit [/bold] -- Catch what Claude misses", style="bright_magenta")
+    console.print()
+
+    confidence = result.ai_confidence
+    count = result.ai_pattern_count
+
+    # Confidence badge config
+    _UNICODE = _supports_unicode()
+    conf_config = {
+        "HIGH":   ("bright_red",   "!! HIGH",  f"{count} AI anti-patterns -- strong signal of unreviewed AI code"),
+        "MEDIUM": ("yellow",       "!! MEDIUM", f"{count} AI anti-patterns -- likely contains AI-generated sections"),
+        "LOW":    ("bright_blue",  "i  LOW",   f"{count} AI anti-pattern -- minor signal, worth reviewing"),
+        "CLEAN":  ("bright_green", "v  CLEAN", "No AI anti-patterns detected -- code looks well-reviewed"),
+    }
+    color, badge, summary = conf_config.get(confidence, ("white", "?", "Unknown"))
+
+    console.print(Panel(
+        f"[bold]{result.filepath}[/bold]\n\n"
+        f"  AI Confidence: [{color}]  {badge}  [/{color}]\n"
+        f"  {summary}",
+        title=f" {ICONS['brain']} AI AUDIT RESULT ",
+        title_align="left",
+        border_style=color,
+        box=box.ROUNDED,
+        width=88,
+        padding=(1, 2),
+    ))
+    console.print()
+
+    if not result.ai_issues:
+        console.print(Panel(
+            "[bright_green]No AI-pattern anti-patterns found.[/bright_green]\n"
+            "This code does not exhibit the typical failure patterns of AI-generated code.",
+            title=f" {ICONS['check']} ALL CLEAR ",
+            title_align="left",
+            border_style="bright_green",
+            box=box.ROUNDED,
+            width=88,
+            padding=(1, 2),
+        ))
+        console.print()
+        return
+
+    # Sort and group issues
+    sorted_issues = sort_issues(result.ai_issues)
+    critical = [i for i in sorted_issues if i.severity == Severity.CRITICAL]
+    warnings  = [i for i in sorted_issues if i.severity == Severity.WARN]
+    infos     = [i for i in sorted_issues if i.severity == Severity.INFO]
+
+    groups = [
+        (critical, "CRITICAL AI PATTERNS", "bright_red"),
+        (warnings,  "AI ANTI-PATTERNS",     "yellow"),
+        (infos,     "AI CODE SMELLS",        "bright_blue"),
+    ]
+    for group, label, group_color in groups:
+        if group:
+            content = "\n\n".join(_format_issue(i) for i in group)
+            console.print(Panel(
+                content,
+                title=f" {ICONS['search']} {label} ",
+                title_align="left",
+                border_style=group_color,
+                box=box.ROUNDED,
+                width=88,
+                padding=(1, 2),
+            ))
+            console.print()
+
+    # "Why Claude Misses These" educational panel
+    pattern_names = ", ".join(sorted({i.pattern_name for i in result.ai_issues}))
+    console.print(Panel(
+        f"[dim]Patterns found: {pattern_names}\n\n"
+        "Claude, Copilot, and ChatGPT optimize for code that [italic]looks[/italic] correct.\n"
+        "They do not run your code, simulate execution order, or validate against production constraints.\n\n"
+        "VibeCheck uses deterministic rules — same code, same result, every time.\n"
+        "It also knows your team's custom standards via [bold].vibecheck_rules.md[/bold],\n"
+        "and remembers what you have already learned so it never repeats itself.[/dim]",
+        title=f" {ICONS['grad']} WHY CLAUDE MISSES THESE ",
+        title_align="left",
+        border_style="dim",
+        box=box.ROUNDED,
+        width=88,
+        padding=(1, 2),
+    ))
+    console.print()
+

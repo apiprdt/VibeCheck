@@ -2,7 +2,7 @@
   <img src="https://raw.githubusercontent.com/apiprdt/VibeCheck/main/assets/logo.jpg" alt="VibeCheck Logo" width="400">
 </p>
 
-<h2 align="center">"VibeCheck: The Virtual Senior Developer in Your Terminal"</h2>
+<h2 align="center">Catch what Claude misses. Deterministic AI code safety — in your terminal.</h2>
 
 <p align="center">
   <a href="https://pypi.org/project/vibecheck-ai-tool/"><img src="https://img.shields.io/pypi/v/vibecheck-ai-tool?color=black&labelColor=gray&style=for-the-badge" alt="PyPI"></a>
@@ -20,7 +20,7 @@
 
 ### **AI-Powered Code Auditing with a "Senior Developer" Vibe.**
 
-VibeCheck is an interactive CLI tool designed to help developers understand, audit, and secure their codebase. It combines strict **rule-based scanning** (AST-based, no hallucinations) with advanced **AI explanations** to ensure you don't just fix bugs—you learn from them.
+VibeCheck is a deterministic CLI security auditing tool that catches the patterns **Claude, Copilot, and ChatGPT consistently get wrong**. It combines a strict rule-based engine (no hallucinations, same result every time) with AI-powered explanations to ensure you don't just find bugs — you understand and fix them.
 
 ---
 
@@ -65,15 +65,26 @@ VibeCheck adapts to how you want to work:
 *   **`--learn`**: (ELI5 Mode) Uses real-world analogies to explain complex security concepts.
 *   **`--chat`** or **`-c`**: Starts an interactive chat session with the "Senior Dev" about the file.
 *   **`--fast`**: Skip the AI and run only the rule-based engine (Instant & Free).
+*   **`--ai-audit`** or **`-a`**: Scan specifically for AI-generated code anti-patterns.
 
 ```bash
-# Example: Learn & Chat at the same time
+# Audit a file for AI-generated anti-patterns
+vibecheck app.py --ai-audit
+
+# Learn & Chat at the same time
 vibecheck app.py --learn --chat
 ```
 
 ---
 
 ## 🛠️ Pro Features (Senior Dev Tools)
+
+### 🤖 **AI Audit (New)**
+Scan specifically for patterns AI code generators consistently get wrong.
+```bash
+vibecheck app.py --ai-audit
+```
+Outputs an **AI Confidence Score** (CLEAN → LOW → MEDIUM → HIGH) with a breakdown of every anti-pattern found and *why* AI generates it.
 
 ### 🩺 **Error Diagnosis**
 Paste a crash message to diagnose it within your code context.
@@ -128,6 +139,23 @@ VibeCheck remembers what you've learned. To start fresh:
 ```bash
 vibecheck --reset-memory
 ```
+
+---
+
+## 🆚 Why VibeCheck vs. Just Asking Claude?
+
+Claude, Copilot, and ChatGPT optimize for code that **looks** correct. They don't simulate execution order, run your code, or enforce your team's rules. VibeCheck does.
+
+| Capability | VibeCheck | Claude / ChatGPT |
+| :--- | :---: | :---: |
+| Deterministic (same code = same result) | ✅ | ❌ |
+| Enforces your team's custom rules | ✅ | ❌ |
+| Remembers what you've already learned | ✅ | ❌ |
+| Git pre-commit integration | ✅ | ❌ |
+| Scans entire directories for debt | ✅ | ❌ |
+| Detects auth middleware order bugs | ✅ | ❌ (rarely) |
+| CI/CD JSON output | ✅ | ❌ |
+| Free to run (rule-based mode) | ✅ | ❌ |
 
 ---
 

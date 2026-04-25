@@ -27,6 +27,7 @@ class Issue:
     line_content: str
     description: str
     fix_hint: str
+    is_ai_pattern: bool = False  # True for patterns common in AI-generated code
 
 
 @dataclass
@@ -37,6 +38,31 @@ class DetectionResult:
     language: str
     issues: list[Issue] = field(default_factory=list)
     concepts: list[str] = field(default_factory=list)
+
+
+@dataclass
+class AIAuditResult:
+    """Detection result for AI-generated code pattern audit."""
+
+    filepath: str
+    language: str
+    ai_issues: list[Issue] = field(default_factory=list)
+
+    @property
+    def ai_confidence(self) -> str:
+        """Confidence level that this is AI-generated code."""
+        count = len(self.ai_issues)
+        if count >= 4:
+            return "HIGH"
+        elif count >= 2:
+            return "MEDIUM"
+        elif count >= 1:
+            return "LOW"
+        return "CLEAN"
+
+    @property
+    def ai_pattern_count(self) -> int:
+        return len(self.ai_issues)
 
 
 # ---------------------------------------------------------------------------
@@ -714,6 +740,290 @@ def _check_ssrf(lines: list[str], language: str) -> list[Issue]:
 
 
 # ---------------------------------------------------------------------------
+# AI-Generated Code Pattern Detection
+# Patterns statistically over-represented in AI-generated code.
+# These are what Claude, Copilot, and ChatGPT frequently get wrong.
+# ---------------------------------------------------------------------------
+
+def _check_ai_mutable_default_args(lines: list[str], language: str) -> list[Issue]:
+    """Detect mutable default arguments — top AI coding mistake."""
+    if language != "python":
+        return []
+    issues = []
+    pattern = re.compile(
+        r'def\s+\w+\s*\(.*?(\w+\s*=\s*(?:\[\]|\{\}|set\(\)|list\(\)|dict\(\))).*?\)'
+    )
+    for i, line in enumerate(lines, 1):
+        stripped = line.strip()
+        if stripped.startswith("#"):
+            continue
+        m = pattern.search(stripped)
+        if m:
+            issues.append(Issue(
+                pattern_name="Mutable Default Argument",
+                severity=Severity.CRITICAL,
+                line_number=i,
+                line_content=stripped,
+                description=(
+                    f"Mutable default '{m.group(1)}' is shared across ALL calls to this function. "
+                    "This is the #1 AI coding mistake — it creates hidden, persistent state that "
+                    "accumulates between calls and causes impossible-to-debug behavior."
+                ),
+                fix_hint="Use None as sentinel: def foo(items=None): if items is None: items = []",
+                is_ai_pattern=True,
+            ))
+    return issues
+
+
+def _check_ai_wildcard_imports(lines: list[str], language: str) -> list[Issue]:
+    """Detect wildcard imports — AI avoids specifying exact imports."""
+    issues = []
+    pattern = re.compile(r'^from\s+\S+\s+import\s+\*')
+    for i, line in enumerate(lines, 1):
+        stripped = line.strip()
+        if pattern.match(stripped):
+            module = stripped.split()[1] if len(stripped.split()) > 1 else "module"
+            issues.append(Issue(
+                pattern_name="Wildcard Import",
+                severity=Severity.WARN,
+                line_number=i,
+                line_content=stripped,
+                description=(
+                    f"'from {module} import *' pollutes the namespace and makes it impossible "
+                    "to trace where names come from. AI models use wildcards to avoid "
+                    "thinking about which specific names they need."
+                ),
+                fix_hint=f"Import explicitly: from {module} import ClassA, function_b",
+                is_ai_pattern=True,
+            ))
+    return issues
+
+
+def _check_ai_placeholder_logic(lines: list[str], language: str) -> list[Issue]:
+    """Detect unimplemented placeholders — AI scaffolds but doesn't implement."""
+    issues = []
+    todo_pattern = re.compile(r'#\s*TODO\b', re.IGNORECASE)
+    not_impl_pattern = re.compile(r'^\s*raise\s+NotImplementedError')
+    fixme_pattern = re.compile(r'#\s*FIXME\b', re.IGNORECASE)
+
+    for i, line in enumerate(lines, 1):
+        stripped = line.strip()
+        if todo_pattern.search(stripped):
+            issues.append(Issue(
+                pattern_name="Placeholder Logic",
+                severity=Severity.WARN,
+                line_number=i,
+                line_content=stripped,
+                description=(
+                    "TODO comment indicates unimplemented functionality. AI models scaffold "
+                    "code structure but leave implementation incomplete — this is production-ready "
+                    "code with a missing foundation."
+                ),
+                fix_hint="Implement the required logic before merging to production.",
+                is_ai_pattern=True,
+            ))
+        elif fixme_pattern.search(stripped):
+            issues.append(Issue(
+                pattern_name="Placeholder Logic",
+                severity=Severity.WARN,
+                line_number=i,
+                line_content=stripped,
+                description="FIXME comment indicates known broken code that was left unfixed.",
+                fix_hint="Fix the issue or document why it cannot be fixed right now.",
+                is_ai_pattern=True,
+            ))
+        elif not_impl_pattern.match(stripped):
+            issues.append(Issue(
+                pattern_name="Unimplemented Method",
+                severity=Severity.WARN,
+                line_number=i,
+                line_content=stripped,
+                description=(
+                    "Function raises NotImplementedError — this is AI-generated scaffolding "
+                    "that was never filled in. Calling this in production will crash immediately."
+                ),
+                fix_hint="Implement the function body, or clearly document it as an abstract interface.",
+                is_ai_pattern=True,
+            ))
+    return issues
+
+
+def _check_ai_assert_for_validation(lines: list[str], language: str) -> list[Issue]:
+    """Detect assert used for production input validation — fails silently with -O flag."""
+    if language != "python":
+        return []
+    # Skip test files
+    full_text = "\n".join(lines[:30])
+    if any(x in full_text for x in ["import pytest", "import unittest", "from unittest"]):
+        return []
+
+    issues = []
+    assert_pattern = re.compile(r'^\s*assert\s+')
+    for i, line in enumerate(lines, 1):
+        stripped = line.strip()
+        if assert_pattern.match(stripped):
+            issues.append(Issue(
+                pattern_name="Assert for Validation",
+                severity=Severity.WARN,
+                line_number=i,
+                line_content=stripped,
+                description=(
+                    "assert statements are completely disabled when Python runs with -O (optimize) flag. "
+                    "AI models use assert for input validation — this silently skips "
+                    "all checks in production environments that use -O."
+                ),
+                fix_hint="Use explicit validation: if not condition: raise ValueError('Expected X, got Y')",
+                is_ai_pattern=True,
+            ))
+    return issues
+
+
+def _check_ai_os_system(lines: list[str], language: str) -> list[Issue]:
+    """Detect os.system() — shell injection risk, classic AI shortcut."""
+    if language != "python":
+        return []
+    issues = []
+    pattern = re.compile(r'\bos\.system\s*\(')
+    for i, line in enumerate(lines, 1):
+        stripped = line.strip()
+        if stripped.startswith("#"):
+            continue
+        if pattern.search(stripped):
+            issues.append(Issue(
+                pattern_name="Shell Injection Risk",
+                severity=Severity.CRITICAL,
+                line_number=i,
+                line_content=stripped,
+                description=(
+                    "os.system() passes the command string directly to the shell. "
+                    "If any part contains user input, this allows arbitrary command execution. "
+                    "AI models use os.system() as the 'easy' way to run shell commands."
+                ),
+                fix_hint="Use subprocess.run(['cmd', 'arg'], capture_output=True, check=True) — never pass shell=True with user input.",
+                is_ai_pattern=True,
+            ))
+    return issues
+
+
+def _check_ai_sync_in_async(lines: list[str], language: str) -> list[Issue]:
+    """Detect blocking calls inside async functions — blocks the entire event loop."""
+    if language != "python":
+        return []
+    issues = []
+    blocking_patterns = [
+        (re.compile(r'\btime\.sleep\s*\('), "time.sleep()", "asyncio.sleep()"),
+        (re.compile(r'\brequests\.(get|post|put|delete|patch)\s*\('), "requests.*()", "aiohttp or httpx"),
+    ]
+    in_async = False
+    async_indent = -1
+
+    for i, line in enumerate(lines, 1):
+        stripped = line.strip()
+        if not stripped:
+            continue
+        indent = len(line) - len(line.lstrip())
+        if re.match(r'\s*async\s+def\s+', line):
+            in_async = True
+            async_indent = indent
+        elif in_async and indent <= async_indent and stripped and not stripped.startswith('#'):
+            if not re.match(r'\s*(async\s+def|@)', line):
+                in_async = False
+        if in_async and indent > async_indent:
+            for pat, sync_name, async_name in blocking_patterns:
+                if pat.search(stripped) and 'await' not in stripped:
+                    issues.append(Issue(
+                        pattern_name="Blocking Call in Async",
+                        severity=Severity.WARN,
+                        line_number=i,
+                        line_content=stripped,
+                        description=(
+                            f"{sync_name} blocks the entire async event loop — "
+                            "all other coroutines freeze until this call returns. "
+                            "This is a top-3 AI async mistake."
+                        ),
+                        fix_hint=f"Replace with the async equivalent: {async_name}",
+                        is_ai_pattern=True,
+                    ))
+                    break
+    return issues
+
+
+def _check_ai_debug_prints(lines: list[str], language: str) -> list[Issue]:
+    """Detect print() in files that already use logging — AI debugging leftovers."""
+    if language != "python":
+        return []
+    full_text_top = "\n".join(lines[:40])
+    has_logging = "import logging" in full_text_top or "from logging" in full_text_top
+    if not has_logging:
+        return []
+
+    issues = []
+    print_pattern = re.compile(r'^\s*print\s*\(')
+    for i, line in enumerate(lines, 1):
+        stripped = line.strip()
+        if stripped.startswith("#"):
+            continue
+        if print_pattern.match(stripped):
+            issues.append(Issue(
+                pattern_name="Debug Print Statement",
+                severity=Severity.INFO,
+                line_number=i,
+                line_content=stripped,
+                description=(
+                    "print() used instead of the logging module already imported in this file. "
+                    "AI models add print() for debugging and forget to convert them. "
+                    "print() has no log levels, no timestamps, and can't be disabled in production."
+                ),
+                fix_hint="Replace with: logging.debug('message') or logging.info('message')",
+                is_ai_pattern=True,
+            ))
+    return issues
+
+
+def _check_ai_missing_await(lines: list[str], language: str) -> list[Issue]:
+    """Detect async library calls without await inside async functions."""
+    if language != "python":
+        return []
+    issues = []
+    needs_await = re.compile(
+        r'\b(?:asyncio\.sleep|asyncio\.gather|asyncio\.wait|asyncio\.create_task|'
+        r'session\.(?:get|post|put|delete|patch|request)|'
+        r'aiohttp\.[\w.]+|asyncpg\.[\w.]+|aiomysql\.[\w.]+|'
+        r'aiofiles\.open)\s*\(',
+    )
+    in_async = False
+    async_indent = -1
+
+    for i, line in enumerate(lines, 1):
+        stripped = line.strip()
+        if not stripped:
+            continue
+        indent = len(line) - len(line.lstrip())
+        if re.match(r'\s*async\s+def\s+', line):
+            in_async = True
+            async_indent = indent
+        elif in_async and indent <= async_indent and stripped and not stripped.startswith('#'):
+            if not re.match(r'\s*(async\s+def|@)', line):
+                in_async = False
+        if in_async and indent > async_indent:
+            if needs_await.search(stripped) and 'await' not in stripped and not stripped.startswith('#'):
+                issues.append(Issue(
+                    pattern_name="Missing Await",
+                    severity=Severity.CRITICAL,
+                    line_number=i,
+                    line_content=stripped,
+                    description=(
+                        "Async coroutine called without 'await'. The coroutine object is created "
+                        "but never executed — this is completely silent and returns None or a "
+                        "coroutine object instead of the actual result. Top AI async mistake."
+                    ),
+                    fix_hint="Add 'await' before the call. Example: result = await session.get(url)",
+                    is_ai_pattern=True,
+                ))
+    return issues
+
+
+# ---------------------------------------------------------------------------
 # Concept extraction
 # ---------------------------------------------------------------------------
 
@@ -735,6 +1045,15 @@ CONCEPT_MAP = {
     "Path Traversal": ["Input Sanitization", "Secure File Access"],
     "Insecure Deserialization": ["Safe Deserialization", "Input Validation"],
     "SSRF": ["URL Validation", "Server-Side Request Forgery Prevention"],
+    "Mutable Default Argument": ["Python Default Arguments", "Function State Management"],
+    "Wildcard Import": ["Python Import System", "Namespace Management"],
+    "Placeholder Logic": ["Production Readiness", "Code Completeness"],
+    "Unimplemented Method": ["Abstract Interfaces", "Production Readiness"],
+    "Assert for Validation": ["Input Validation", "Python Optimization Flags"],
+    "Shell Injection Risk": ["Command Injection", "subprocess vs os.system"],
+    "Blocking Call in Async": ["Async/Await Patterns", "Event Loop Blocking"],
+    "Debug Print Statement": ["Logging Best Practices", "Production Readiness"],
+    "Missing Await": ["Async/Await Patterns", "Coroutine Execution"],
 }
 
 # Additional concept patterns detected from code (not issues)
@@ -795,6 +1114,21 @@ ALL_CHECKS = [
     _check_missing_type_hints,
     _check_long_functions,
     _check_missing_docstrings,
+]
+
+# AI-Generated Code Pattern checks
+AI_PATTERN_CHECKS = [
+    _check_ai_mutable_default_args,
+    _check_ai_missing_await,
+    _check_ai_os_system,
+    _check_ai_wildcard_imports,
+    _check_ai_placeholder_logic,
+    _check_ai_assert_for_validation,
+    _check_ai_sync_in_async,
+    _check_ai_debug_prints,
+    # Also include key security checks — AI commonly misses these too
+    _check_hardcoded_credentials,
+    _check_swallowed_errors,
 ]
 
 
@@ -909,4 +1243,52 @@ def detect_fast(filepath: str) -> DetectionResult:
         language=language,
         issues=all_issues,
         concepts=[],
+    )
+
+
+def detect_ai_patterns(filepath: str, custom_content: str | None = None) -> AIAuditResult:
+    """Scan a file specifically for AI-generated code anti-patterns.
+
+    Returns an AIAuditResult with only AI-pattern-tagged issues and a
+    confidence score indicating how likely the code is AI-generated.
+    """
+    path = Path(filepath)
+    language = detect_language(filepath)
+
+    if custom_content is not None:
+        content = custom_content
+    else:
+        if not path.exists():
+            raise FileNotFoundError(f"File not found: {filepath}")
+        try:
+            content = path.read_text(encoding="utf-8")
+        except UnicodeDecodeError:
+            content = path.read_text(encoding="latin-1")
+
+    lines = content.splitlines()
+
+    all_issues: list[Issue] = []
+    for check_fn in AI_PATTERN_CHECKS:
+        try:
+            found = check_fn(lines, language)
+            # Ensure all issues from AI checks are tagged
+            for issue in found:
+                issue.is_ai_pattern = True
+            all_issues.extend(found)
+        except Exception:
+            pass
+
+    # De-duplicate by line number + pattern name
+    seen = set()
+    deduped = []
+    for issue in all_issues:
+        key = (issue.line_number, issue.pattern_name)
+        if key not in seen:
+            seen.add(key)
+            deduped.append(issue)
+
+    return AIAuditResult(
+        filepath=filepath,
+        language=language,
+        ai_issues=deduped,
     )

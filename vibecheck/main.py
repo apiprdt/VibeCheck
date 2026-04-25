@@ -15,14 +15,15 @@ import typer
 from rich.console import Console
 
 from vibecheck import __version__
-from vibecheck.core.detector import detect, detect_fast, DetectionResult
+from vibecheck.core.detector import detect, detect_fast, DetectionResult, detect_ai_patterns, AIAuditResult
 from vibecheck.core.severity import Severity, sort_issues
 from vibecheck.core.memory import (
     get_memory_context, record_concept, reset_memory, get_all_concepts,
 )
 from vibecheck.core.explainer import (
     render_file_report, render_error_report, render_debt_report,
-    render_memory_reset, render_hook_output, console as rich_console,
+    render_memory_reset, render_hook_output, render_ai_audit_report,
+    console as rich_console,
 )
 from vibecheck.core.llm import explain_issues, explain_error, analyze_debt, is_llm_available, _load_config
 
@@ -127,6 +128,7 @@ def main(
     learn: bool = typer.Option(False, "--learn", help="Deeper concept explanations with examples"),
     senior: bool = typer.Option(False, "--senior", help="Add senior dev perspective"),
     risks: bool = typer.Option(False, "--risks", help="Add extended risk analysis"),
+    ai_audit: bool = typer.Option(False, "--ai-audit", "-a", help="Scan for AI-generated code anti-patterns (catch what Claude misses)"),
     install_hook: bool = typer.Option(False, "--install-hook", help="Install git pre-commit hook"),
     fail_on_critical: bool = typer.Option(
         False, "--fail-on-critical", help="Hook blocks on critical issues"
@@ -161,7 +163,7 @@ def main(
     if staged:
         _run_staged_scan(learn=learn, senior=senior, risks=risks, json_output=json_output, fast=fast, chat=chat)
         return
-        
+
     # --- Need a file from here ---
     if not file:
         rich_console.print("[red]Error:[/red] Please provide a file to analyze.")
@@ -173,6 +175,11 @@ def main(
         rich_console.print(f"[red]Error:[/red] File not found: {file}")
         raise typer.Exit(1)
 
+    # --- AI Audit ---
+    if ai_audit:
+        _run_ai_audit(str(filepath))
+        return
+
     # --- Error diagnosis ---
     if error:
         _run_error_diagnosis(str(filepath), error)
@@ -183,6 +190,24 @@ def main(
         str(filepath), learn=learn, senior=senior, risks=risks,
         json_output=json_output, fast=fast, chat=chat
     )
+
+
+def _run_ai_audit(filepath: str) -> None:
+    """Run AI-pattern audit on a single file and render the report."""
+    try:
+        result = detect_ai_patterns(filepath)
+    except FileNotFoundError:
+        rich_console.print(f"[red]Error:[/red] File not found: {filepath}")
+        raise typer.Exit(1)
+    except Exception as e:
+        rich_console.print(f"[red]Error reading file:[/red] {e}")
+        raise typer.Exit(1)
+
+    render_ai_audit_report(result)
+
+    # Exit with non-zero code if HIGH confidence AI issues found (useful for CI)
+    if result.ai_confidence == "HIGH":
+        raise typer.Exit(1)
 
 def _get_staged_content_and_lines(filepath: str) -> tuple[str, set[int]]:
     """Get the staged content and the line numbers that were modified."""
