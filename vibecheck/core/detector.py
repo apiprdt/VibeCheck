@@ -1227,6 +1227,9 @@ def detect_fast(filepath: str) -> DetectionResult:
         _check_missing_timeout,
         _check_select_star,
         _check_ssrf,
+        _check_ai_mutable_default_args,
+        _check_ai_missing_await,
+        _check_ai_os_system,
     ]
 
     all_issues: list[Issue] = []
