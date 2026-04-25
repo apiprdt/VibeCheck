@@ -136,7 +136,7 @@ def _check_sql_injection(lines: list[str], language: str) -> list[Issue]:
                 line_content=stripped,
                 description="User input interpolated directly into SQL query via f-string. "
                             "An attacker can inject arbitrary SQL commands.",
-                fix_hint='Use parameterized queries: cursor.execute("SELECT * FROM users WHERE id = ?", (user_id,))',
+                fix_hint='Use parameterized queries: cursor.execute("SELECT * FROM users WHERE id = ?", (user_id,))  [CWE-89 / OWASP A03:2021]',
             ))
         elif format_sql.search(stripped):
             issues.append(Issue(
@@ -146,7 +146,7 @@ def _check_sql_injection(lines: list[str], language: str) -> list[Issue]:
                 line_content=stripped,
                 description="User input interpolated into SQL via .format(). "
                             "An attacker can inject arbitrary SQL commands.",
-                fix_hint='Use parameterized queries: cursor.execute("SELECT * FROM users WHERE id = ?", (user_id,))',
+                fix_hint='Use parameterized queries: cursor.execute("SELECT * FROM users WHERE id = ?", (user_id,))  [CWE-89 / OWASP A03:2021]',
             ))
         elif concat_sql.search(stripped):
             issues.append(Issue(
@@ -156,7 +156,7 @@ def _check_sql_injection(lines: list[str], language: str) -> list[Issue]:
                 line_content=stripped,
                 description="User input concatenated into SQL string. "
                             "An attacker can inject arbitrary SQL commands.",
-                fix_hint='Use parameterized queries: cursor.execute("SELECT * FROM users WHERE id = ?", (user_id,))',
+                fix_hint='Use parameterized queries: cursor.execute("SELECT * FROM users WHERE id = ?", (user_id,))  [CWE-89 / OWASP A03:2021]',
             ))
 
     # Also check multi-line context: execute() call with f-string nearby
@@ -205,8 +205,8 @@ def _check_hardcoded_credentials(lines: list[str], language: str) -> list[Issue]
                 line_number=i,
                 line_content=stripped,
                 description="Credentials appear to be hardcoded in source code. "
-                            "These will be visible in version control history.",
-                fix_hint="Use environment variables: os.environ.get('API_KEY') or a secrets manager.",
+                            "These will be visible in version control history and to anyone with repo access.",
+                fix_hint="Use environment variables: os.environ.get('API_KEY') or a secrets manager.  [CWE-798 / OWASP A07:2021]",
             ))
 
     return issues
@@ -230,7 +230,7 @@ def _check_code_injection(lines: list[str], language: str) -> list[Issue]:
                 line_content=stripped,
                 description="eval() with dynamic input allows arbitrary code execution. "
                             "An attacker can run any code on your system.",
-                fix_hint="Use ast.literal_eval() for safe evaluation, or restructure to avoid eval entirely.",
+                fix_hint="Use ast.literal_eval() for safe evaluation, or restructure to avoid eval entirely.  [CWE-94 / OWASP A03:2021]",
             ))
 
     return issues
@@ -617,7 +617,7 @@ def _check_xss(lines: list[str], language: str) -> list[Issue]:
                     description=f"Using {desc} can allow Cross-Site Scripting (XSS) attacks. "
                                 "User input rendered as HTML lets attackers inject malicious scripts.",
                     fix_hint="Use textContent instead of innerHTML, or sanitize with DOMPurify: "
-                             "DOMPurify.sanitize(userInput)",
+                             "DOMPurify.sanitize(userInput)  [CWE-79 / OWASP A03:2021]",
                 ))
                 break
 
@@ -658,7 +658,7 @@ def _check_path_traversal(lines: list[str], language: str) -> list[Issue]:
                     description="User input used in file path without sanitization. "
                                 "An attacker can use '../' sequences to read arbitrary files on the server.",
                     fix_hint="Validate and sanitize paths: use os.path.realpath() and verify "
-                             "the resolved path starts with your expected base directory.",
+                             "the resolved path starts with your expected base directory.  [CWE-22 / OWASP A01:2021]",
                 ))
                 break
 
@@ -696,7 +696,7 @@ def _check_insecure_deserialization(lines: list[str], language: str) -> list[Iss
                     line_content=stripped,
                     description=f"Using {desc} with untrusted data allows arbitrary code execution. "
                                 "An attacker can craft malicious payloads to take over the server.",
-                    fix_hint=fix,
+                    fix_hint=fix + "  [CWE-502 / OWASP A08:2021]",
                 ))
                 break
 
@@ -733,7 +733,7 @@ def _check_ssrf(lines: list[str], language: str) -> list[Issue]:
                 description="User input used directly in server-side HTTP request URL. "
                             "An attacker could make your server request internal services or cloud metadata endpoints.",
                 fix_hint="Validate URLs against an allowlist of trusted domains. "
-                         "Block private IP ranges (10.x, 172.16.x, 192.168.x, 169.254.169.254).",
+                         "Block private IP ranges (10.x, 172.16.x, 192.168.x, 169.254.169.254).  [CWE-918 / OWASP A10:2021]",
             ))
 
     return issues
@@ -811,25 +811,24 @@ def _check_ai_placeholder_logic(lines: list[str], language: str) -> list[Issue]:
         if todo_pattern.search(stripped):
             issues.append(Issue(
                 pattern_name="Placeholder Logic",
-                severity=Severity.WARN,
+                severity=Severity.INFO,
                 line_number=i,
                 line_content=stripped,
                 description=(
-                    "TODO comment indicates unimplemented functionality. AI models scaffold "
-                    "code structure but leave implementation incomplete — this is production-ready "
-                    "code with a missing foundation."
+                    "TODO comment indicates functionality not yet implemented. "
+                    "Review before merging to a production branch."
                 ),
-                fix_hint="Implement the required logic before merging to production.",
+                fix_hint="Implement the required logic or track this as a ticket before releasing to production.",
                 is_ai_pattern=True,
             ))
         elif fixme_pattern.search(stripped):
             issues.append(Issue(
                 pattern_name="Placeholder Logic",
-                severity=Severity.WARN,
+                severity=Severity.INFO,
                 line_number=i,
                 line_content=stripped,
-                description="FIXME comment indicates known broken code that was left unfixed.",
-                fix_hint="Fix the issue or document why it cannot be fixed right now.",
+                description="FIXME comment indicates a known issue that has not been resolved.",
+                fix_hint="Fix the issue or document the reason it is deferred with a ticket reference.",
                 is_ai_pattern=True,
             ))
         elif not_impl_pattern.match(stripped):
@@ -839,8 +838,8 @@ def _check_ai_placeholder_logic(lines: list[str], language: str) -> list[Issue]:
                 line_number=i,
                 line_content=stripped,
                 description=(
-                    "Function raises NotImplementedError — this is AI-generated scaffolding "
-                    "that was never filled in. Calling this in production will crash immediately."
+                    "Function raises NotImplementedError — this is scaffolding that has not been "
+                    "filled in. Calling this path in production will raise an exception immediately."
                 ),
                 fix_hint="Implement the function body, or clearly document it as an abstract interface.",
                 is_ai_pattern=True,
@@ -864,15 +863,15 @@ def _check_ai_assert_for_validation(lines: list[str], language: str) -> list[Iss
         if assert_pattern.match(stripped):
             issues.append(Issue(
                 pattern_name="Assert for Validation",
-                severity=Severity.WARN,
+                severity=Severity.INFO,
                 line_number=i,
                 line_content=stripped,
                 description=(
-                    "assert statements are completely disabled when Python runs with -O (optimize) flag. "
-                    "AI models use assert for input validation — this silently skips "
-                    "all checks in production environments that use -O."
+                    "assert is disabled when Python runs with the -O (optimize) flag, "
+                    "silently skipping all checks. Consider replacing with explicit validation "
+                    "for code paths that handle external input."
                 ),
-                fix_hint="Use explicit validation: if not condition: raise ValueError('Expected X, got Y')",
+                fix_hint="For external input validation: if not condition: raise ValueError('Expected X, got Y')",
                 is_ai_pattern=True,
             ))
     return issues

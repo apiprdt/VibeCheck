@@ -129,6 +129,7 @@ def main(
     senior: bool = typer.Option(False, "--senior", help="Add senior dev perspective"),
     risks: bool = typer.Option(False, "--risks", help="Add extended risk analysis"),
     ai_audit: bool = typer.Option(False, "--ai-audit", "-a", help="Scan for AI-generated code anti-patterns (catch what Claude misses)"),
+    init_proj: bool = typer.Option(False, "--init", help="Initialize VibeCheck for this project (creates .vibecheck_rules.md, checks API keys)"),
     install_hook: bool = typer.Option(False, "--install-hook", help="Install git pre-commit hook"),
     fail_on_critical: bool = typer.Option(
         False, "--fail-on-critical", help="Hook blocks on critical issues"
@@ -141,6 +142,11 @@ def main(
     ),
 ) -> None:
     """Analyze code files for issues, concepts, and learning opportunities."""
+
+    # --- Init project ---
+    if init_proj:
+        _run_init()
+        return
 
     # --- Reset memory ---
     if reset_mem:
@@ -205,9 +211,67 @@ def _run_ai_audit(filepath: str) -> None:
 
     render_ai_audit_report(result)
 
-    # Exit with non-zero code if HIGH confidence AI issues found (useful for CI)
-    if result.ai_confidence == "HIGH":
-        raise typer.Exit(1)
+
+def _run_init() -> None:
+    """Initialize VibeCheck for the current project directory."""
+    rich_console.print()
+    rich_console.print("[bold bright_cyan]>> VibeCheck Init[/bold bright_cyan]")
+    rich_console.print()
+
+    # 1. Check API keys
+    providers = [
+        ("GROQ_API_KEY",       "Groq (fastest, free tier available — console.groq.com)"),
+        ("OPENAI_API_KEY",     "OpenAI"),
+        ("ANTHROPIC_API_KEY",  "Anthropic"),
+        ("GOOGLE_API_KEY",     "Google Gemini"),
+        ("GEMINI_API_KEY",     "Google Gemini"),
+        ("MISTRAL_API_KEY",    "Mistral"),
+        ("OLLAMA_API_BASE",    "Ollama (local, no API key needed)"),
+    ]
+    found = False
+    for env_var, name in providers:
+        if os.environ.get(env_var):
+            rich_console.print(f"  [bright_green]v[/bright_green] API key found: {name} ({env_var})")
+            found = True
+            break
+
+    if not found:
+        rich_console.print("  [yellow]![/yellow] No API key detected. AI features will be disabled.")
+        rich_console.print("  [dim]    Set one of: GROQ_API_KEY, OPENAI_API_KEY, ANTHROPIC_API_KEY, GOOGLE_API_KEY[/dim]")
+        rich_console.print("  [dim]    Fastest free option: https://console.groq.com[/dim]")
+    rich_console.print()
+
+    # 2. Create .vibecheck_rules.md if missing
+    rules_path = Path(".vibecheck_rules.md")
+    if rules_path.exists():
+        rich_console.print("  [dim]v .vibecheck_rules.md already exists -- skipping[/dim]")
+    else:
+        rules_content = (
+            "# VibeCheck Project Rules\n\n"
+            "## Security\n"
+            "- Never hardcode secrets or API keys. Use environment variables.\n"
+            "- All HTTP endpoints must validate and sanitize user input.\n"
+            "- Use parameterized queries for all database operations.\n\n"
+            "## Code Quality\n"
+            "- All public functions must have docstrings.\n"
+            "- Functions longer than 50 lines should be refactored.\n"
+            "- Avoid wildcard imports (from module import *).\n\n"
+            "## Team Standards\n"
+            "- Add your project-specific rules here.\n"
+            "- VibeCheck will enforce these on every scan.\n"
+        )
+        rules_path.write_text(rules_content, encoding="utf-8")
+        rich_console.print("  [bright_green]v[/bright_green] Created .vibecheck_rules.md -- customize this for your team")
+    rich_console.print()
+
+    # 3. Print next steps
+    rich_console.print("  [bold]Next steps:[/bold]")
+    rich_console.print("    [cyan]vibecheck <file>[/cyan]              -- security audit + AI explanation")
+    rich_console.print("    [cyan]vibecheck <file> --ai-audit[/cyan]   -- detect AI-generated code patterns")
+    rich_console.print("    [cyan]vibecheck <file> --learn[/cyan]      -- explain issues with ELI5 analogies")
+    rich_console.print("    [cyan]vibecheck --debt .[/cyan]            -- scan entire project for issues")
+    rich_console.print("    [cyan]vibecheck --install-hook[/cyan]      -- block bad commits automatically")
+    rich_console.print()
 
 def _get_staged_content_and_lines(filepath: str) -> tuple[str, set[int]]:
     """Get the staged content and the line numbers that were modified."""

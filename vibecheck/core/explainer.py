@@ -323,6 +323,22 @@ def render_ai_audit_report(result: object) -> None:
     console.rule("[bold] vibecheck --ai-audit [/bold] -- Catch what Claude misses", style="bright_magenta")
     console.print()
 
+    # Language scope notice for non-Python files
+    if result.language != "python":
+        console.print(Panel(
+            f"[yellow]AI Audit is currently optimized for Python.[/yellow]\n"
+            f"Detected language: [bold]{result.language}[/bold]\n\n"
+            "A subset of checks (wildcard imports, placeholder logic) may still apply.\n"
+            "Full multi-language AI Audit support is planned for a future release.",
+            title=f" {ICONS['book']} LANGUAGE SCOPE ",
+            title_align="left",
+            border_style="yellow",
+            box=box.ROUNDED,
+            width=88,
+            padding=(1, 2),
+        ))
+        console.print()
+
     confidence = result.ai_confidence
     count = result.ai_pattern_count
 

@@ -50,7 +50,13 @@ VibeCheck is a deterministic CLI security auditing tool that catches the pattern
 pip install vibecheck-ai-tool
 ```
 
-### 2. Basic Audit
+### 2. Initialization (Optional but Recommended)
+Set up your `.vibecheck_rules.md` and check API keys in one go:
+```bash
+vibecheck --init
+```
+
+### 3. Basic Audit
 Scan any file and get AI-powered explanations:
 ```bash
 vibecheck app.py
@@ -81,6 +87,7 @@ vibecheck app.py --learn --chat
 
 ### 🤖 **AI Audit (New)**
 Scan specifically for patterns AI code generators consistently get wrong.
+*(Note: AI Audit is currently optimized for Python. JS/TS/Go support coming soon)*
 ```bash
 vibecheck app.py --ai-audit
 ```
@@ -129,7 +136,7 @@ vibecheck app.py --json
 ## ✨ Key Features
 
 ### 🛡️ **Rule-Based Engine & Local Guidelines**
-VibeCheck uses a strict engine to catch SQL Injections, Hardcoded Credentials, and more. It reads your **`.vibecheck_rules.md`** to enforce project-specific standards.
+VibeCheck uses a strict engine to catch SQL Injections, Hardcoded Credentials, and more—with **CWE and OWASP references** for every critical security vulnerability. It reads your **`.vibecheck_rules.md`** to enforce project-specific standards.
 
 ### 🧠 **Smart Global Caching**
 VibeCheck caches every AI response locally (`~/.vibecheck/cache`). Subsequent scans of the same code are **instant and free**.
@@ -161,7 +168,7 @@ Claude, Copilot, and ChatGPT optimize for code that **looks** correct. They don'
 
 ## ⚙️ Configuration & Providers
 
-VibeCheck is **universal**. Configure your favorite provider via environment variables or `~/.vibecheck/config.yaml`.
+VibeCheck supports multiple programming languages (Python, JavaScript, TypeScript, Go) and is **model-agnostic**. Configure your favorite provider via environment variables or `~/.vibecheck/config.yaml`.
 
 | Provider | Environment Variable | Default Model |
 | :--- | :--- | :--- |
