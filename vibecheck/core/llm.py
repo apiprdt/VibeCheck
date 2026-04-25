@@ -66,7 +66,16 @@ def get_model() -> str:
         model = env_model
     else:
         config = _load_config()
-        model = config.get("model", "gpt-4o-mini")
+        model = config.get("model")
+        
+        # Smart Defaulting based on available keys
+        if not model:
+            if os.environ.get("GROQ_API_KEY"):
+                model = "groq/llama-3.3-70b-versatile"
+            elif os.environ.get("ANTHROPIC_API_KEY"):
+                model = "claude-3-5-sonnet-20240620"
+            else:
+                model = "gpt-4o-mini"
         
     if is_enterprise and not model.startswith("ollama/"):
         return f"ollama/{model}"
