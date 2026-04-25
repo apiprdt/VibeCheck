@@ -758,8 +758,6 @@ def _check_ai_placeholder_logic(lines: list[str], language: str) -> list[Issue]:
     todo_pattern = re.compile(r'#\s*TODO\b', re.IGNORECASE)
     not_impl_pattern = re.compile(r'^\s*raise\s+NotImplementedError')
     fixme_pattern = re.compile(r'#\s*FIXME\b', re.IGNORECASE)
-    lazy_ai_pattern = re.compile(r'(#|//)\s*\.\.\.\s*(rest|existing|previous|your|code).*', re.IGNORECASE)
-
 
     for i, line in enumerate(lines, 1):
         stripped = line.strip()
@@ -774,19 +772,6 @@ def _check_ai_placeholder_logic(lines: list[str], language: str) -> list[Issue]:
                     "Review before merging to a production branch."
                 ),
                 fix_hint="Implement the required logic or track this as a ticket before releasing to production.",
-                is_ai_pattern=True,
-            ))
-        elif lazy_ai_pattern.search(stripped):
-            issues.append(Issue(
-                pattern_name="Lazy AI Placeholder",
-                severity=Severity.CRITICAL,
-                line_number=i,
-                line_content=stripped,
-                description=(
-                    "AI gave you incomplete code (e.g., '# ... rest of your code'). "
-                    "If you copy-pasted this directly, you just DELETED your previous logic!"
-                ),
-                fix_hint="NEVER copy-paste AI placeholders. Manually merge the new lines into your existing code.",
                 is_ai_pattern=True,
             ))
         elif fixme_pattern.search(stripped):
@@ -1021,7 +1006,6 @@ CONCEPT_MAP = {
     "Blocking Call in Async": ["Async/Await Patterns", "Event Loop Blocking"],
     "Debug Print Statement": ["Logging Best Practices", "Production Readiness"],
     "Missing Await": ["Async/Await Patterns", "Coroutine Execution"],
-    "Lazy AI Placeholder": ["AI Code Merging", "Manual Code Review"],
 }
 
 # Additional concept patterns detected from code (not issues)
@@ -1116,7 +1100,6 @@ ALL_CHECKS = [
     _check_ai_mutable_default_args,
     _check_ai_missing_await,
     _check_ai_os_system,
-    _check_ai_placeholder_logic,
     # WARN
     _check_swallowed_errors,
     _check_missing_timeout,

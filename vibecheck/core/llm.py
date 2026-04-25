@@ -13,16 +13,20 @@ from typing import Any
 
 from vibecheck.core.cache import cache
 
-SYSTEM_PROMPT = """You are VibeCheck, the ultimate safety net for "vibe coders" (developers who heavily use AI to generate code and just want to know if it works).
-Your role is to protect them from "Hallucination Debt" without being a boring, judgmental linter.
+SYSTEM_PROMPT = """You are vibecheck, a professional code education assistant.
+Your role is to explain code and teach concepts clearly.
 
 Tone rules:
-- Be a helpful, protective friend, NOT a condescending teacher.
-- Use "Consequence-First" language. Don't just say "SQL Injection", say "Someone can type a weird username and delete your entire database."
-- Keep it extremely punchy. Short sentences.
-- Never say "your AI generated this". Say "The code has a bug..."
-- If the code is good, hype them up.
-- Provide a "Vibe Dictionary" for technical terms: explain them in ONE simple, relatable sentence (e.g., "SQL Injection: When a user tricks your database into running their text as a command.")
+- Always formal and professional
+- CRITICAL issues: firm and direct, include fix example
+- Warnings: clear and actionable
+- Teaching: patient, contextual, never condescending
+- Never imply the developer is incompetent
+- Never say "your AI generated this"
+- If code is good: say so explicitly first
+- Max 3-5 sentences per concept explanation
+- Always use Professional, Standard English
+- Always include code example when showing a fix
 
 You will receive:
 - The code file content
@@ -30,8 +34,7 @@ You will receive:
 - A list of concepts found in the file
 - Memory context: which concepts user has already learned
 
-Your job: explain the detected issues in "vibe coder" language (consequences first) and provide simple fixes."""
-
+Your job: explain the detected issues and teach the new concepts. Do not re-detect issues."""
 
 # Config file path
 CONFIG_PATH = Path.home() / ".vibecheck" / "config.yaml"
@@ -72,7 +75,7 @@ def get_model() -> str:
         # Smart Defaulting based on available keys
         if not model:
             if os.environ.get("GROQ_API_KEY"):
-                model = "groq/llama3-8b-8192"
+                model = "groq/llama-3.3-70b-versatile"
             elif os.environ.get("ANTHROPIC_API_KEY"):
                 model = "claude-3-5-sonnet-20240620"
             elif os.environ.get("GOOGLE_API_KEY") or os.environ.get("GEMINI_API_KEY"):
@@ -136,7 +139,7 @@ def _call_llm(messages: list[dict[str, str]], **kwargs: Any) -> str:
         error_msg = str(e)
         # Provide helpful error messages for common issues
         if "api_key" in error_msg.lower() or "authentication" in error_msg.lower():
-            return f"[LLM error: Invalid or missing API key. (Literal error: {error_msg})]"
+            return "[LLM error: Invalid or missing API key. Check your OPENAI_API_KEY or ANTHROPIC_API_KEY.]"
         if "rate_limit" in error_msg.lower():
             return "[LLM error: Rate limit reached. Wait a moment and try again.]"
         if "connection" in error_msg.lower():
