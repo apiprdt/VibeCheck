@@ -79,8 +79,30 @@ def render_file_report(
     warnings = [i for i in sorted_issues if i.severity == Severity.WARN]
     infos = [i for i in sorted_issues if i.severity == Severity.INFO]
 
+    # --- VIBE SCORE ---
+    score = 10.0
+    score -= len(critical) * 3.0
+    score -= len(warnings) * 1.0
+    score -= len(infos) * 0.5
+    score = max(1.0, min(10.0, score))
+    
+    score_color = "bright_green" if score >= 8 else "yellow" if score >= 5 else "red"
+    meter = "=" * int(score) + "." * (10 - int(score))
+    
+    console.print(Panel(
+        f"[{score_color}][{meter}] {score:.1f}/10.0[/{score_color}]",
+        title=f" {ICONS['star']} VIBE SCORE ",
+        title_align="left",
+        border_style=score_color,
+        box=box.ROUNDED,
+        width=88,
+        padding=(0, 2),
+    ))
+    console.print()
+
     # --- CRITICAL (first, always) ---
     if critical:
+
         from rich.console import Group
         renderables = []
         for i in critical:
