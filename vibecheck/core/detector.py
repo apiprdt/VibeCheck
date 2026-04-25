@@ -8,64 +8,13 @@ from __future__ import annotations
 
 import logging
 import re
-from dataclasses import dataclass, field
 from pathlib import Path
 
 from vibecheck.core.severity import Severity
+from vibecheck.core.models import Issue, DetectionResult, AIAuditResult
+from vibecheck.core.ast_engine import run_ast_audit
 
 logger = logging.getLogger(__name__)
-
-
-# ---------------------------------------------------------------------------
-# Data classes
-# ---------------------------------------------------------------------------
-
-@dataclass
-class Issue:
-    """A detected code issue."""
-
-    pattern_name: str
-    severity: Severity
-    line_number: int
-    line_content: str
-    description: str
-    fix_hint: str
-    is_ai_pattern: bool = False  # True for patterns common in AI-generated code
-
-
-@dataclass
-class DetectionResult:
-    """Complete detection result for a file."""
-
-    filepath: str
-    language: str
-    issues: list[Issue] = field(default_factory=list)
-    concepts: list[str] = field(default_factory=list)
-
-
-@dataclass
-class AIAuditResult:
-    """Detection result for AI-generated code pattern audit."""
-
-    filepath: str
-    language: str
-    ai_issues: list[Issue] = field(default_factory=list)
-
-    @property
-    def ai_confidence(self) -> str:
-        """Confidence level that this is AI-generated code."""
-        count = len(self.ai_issues)
-        if count >= 4:
-            return "HIGH"
-        elif count >= 2:
-            return "MEDIUM"
-        elif count >= 1:
-            return "LOW"
-        return "CLEAN"
-
-    @property
-    def ai_pattern_count(self) -> int:
-        return len(self.ai_issues)
 
 
 # ---------------------------------------------------------------------------
@@ -109,8 +58,9 @@ def _check_sql_injection(lines: list[str], language: str) -> list[Issue]:
         re.IGNORECASE,
     )
     # Python f-string SQL injection
+    # Catch f-strings that contain SQL keywords and interpolation
     fstring_sql = re.compile(
-        r'f["\'].*\{.*\}.*(?:SELECT|INSERT|UPDATE|DELETE|DROP|WHERE|FROM)',
+        r'f["\'].*(?:SELECT|INSERT|UPDATE|DELETE|DROP|WHERE|FROM).+\{.+\}.*["\']',
         re.IGNORECASE,
     )
     # String format SQL injection
@@ -1091,6 +1041,46 @@ def _extract_concepts(lines: list[str], issues: list[Issue], language: str) -> l
     return sorted(concepts)
 
 
+def _check_ai_silent_fail(lines: list[str], language: str) -> list[Issue]:
+    """Signature: Detects 'except: pass' which AI uses to hide failures from the agent."""
+    issues = []
+    if language != "python": return []
+    
+    pattern = re.compile(r"except.*:\s*pass", re.IGNORECASE)
+    for i, line in enumerate(lines, 1):
+        if pattern.search(line):
+            issues.append(Issue(
+                pattern_name="Silent Agent Trap",
+                line_number=i,
+                line_content=line.strip(),
+                description="AI agents often use 'except: pass' to prevent themselves from crashing. This hides critical bugs from you.",
+                fix_hint="Remove 'pass' and log the error or handle it properly.",
+                severity=Severity.CRITICAL
+            ))
+    return issues
+
+
+def _check_ai_overconfidence(lines: list[str], language: str) -> list[Issue]:
+    """Signature: Detects complex data access without None/Existence checks."""
+    issues = []
+    if language != "python": return []
+    
+    # Looking for nested dictionary access like data['a']['b']['c'] without checks
+    pattern = re.compile(r"\w+\[['\"].*['\"].*\]\[['\"].*['\"].*\]", re.IGNORECASE)
+    for i, line in enumerate(lines, 1):
+        if pattern.search(line) and "get(" not in line:
+            issues.append(Issue(
+                pattern_name="AI Overconfidence",
+                line_number=i,
+                line_content=line.strip(),
+                description="AI assumes the data structure is always perfect. This will fail with a KeyError if an agent hallucinates the response format.",
+                fix_hint="Use .get() for nested dictionaries: data.get('a', {}).get('b')",
+                severity=Severity.WARN
+            ))
+    return issues
+
+
+
 # ---------------------------------------------------------------------------
 # Main detection entry point
 # ---------------------------------------------------------------------------
@@ -1106,6 +1096,10 @@ ALL_CHECKS = [
     _check_xss,
     _check_path_traversal,
     _check_insecure_deserialization,
+    # AI-Specific Patterns (Critical)
+    _check_ai_mutable_default_args,
+    _check_ai_missing_await,
+    _check_ai_os_system,
     # WARN
     _check_swallowed_errors,
     _check_missing_timeout,
@@ -1128,6 +1122,9 @@ AI_PATTERN_CHECKS = [
     _check_ai_assert_for_validation,
     _check_ai_sync_in_async,
     _check_ai_debug_prints,
+    # Signature Hallucination Checks
+    _check_ai_silent_fail,
+    _check_ai_overconfidence,
     # Also include key security checks — AI commonly misses these too
     _check_hardcoded_credentials,
     _check_swallowed_errors,
@@ -1162,6 +1159,12 @@ def detect(filepath: str, custom_content: str | None = None, line_filter: set[in
 
     # Run all checks
     all_issues: list[Issue] = []
+    
+    # NEW: Run AST-based structural audit for Python (High Precision)
+    if language == "python":
+        ast_issues = run_ast_audit(content, filepath)
+        all_issues.extend(ast_issues)
+
     for check_fn in ALL_CHECKS:
         try:
             issues = check_fn(lines, language)
@@ -1272,6 +1275,14 @@ def detect_ai_patterns(filepath: str, custom_content: str | None = None) -> AIAu
     lines = content.splitlines()
 
     all_issues: list[Issue] = []
+
+    # NEW: Run AST-based structural audit for Python (High Precision)
+    if language == "python":
+        ast_issues = run_ast_audit(content, filepath)
+        for issue in ast_issues:
+            issue.is_ai_pattern = True
+        all_issues.extend(ast_issues)
+
     for check_fn in AI_PATTERN_CHECKS:
         try:
             found = check_fn(lines, language)

@@ -34,14 +34,24 @@ def _severity_panel(title: str, content: str, severity: Severity) -> Panel:
     )
 
 
-def _format_issue(issue: Issue) -> str:
-    lines = [
-        f"[bold]{issue.pattern_name}[/bold] -- line {issue.line_number}",
-        f"  [dim]{issue.line_content}[/dim]",
-        f"  {issue.description}",
-        f"  [italic]Fix:[/italic] {issue.fix_hint}",
+def _format_issue(issue: Issue, language: str = "python") -> list:
+    """Format an issue with syntax highlighting for the code line."""
+    syntax = Syntax(
+        issue.line_content, 
+        language, 
+        theme="monokai", 
+        line_numbers=False, 
+        word_wrap=True,
+        background_color="default"
+    )
+    
+    return [
+        Text.from_markup(f"[bold]{issue.pattern_name}[/bold] -- line {issue.line_number}"),
+        syntax,
+        Text.from_markup(f"  {issue.description}"),
+        Text.from_markup(f"  [italic]Fix:[/italic] {issue.fix_hint}"),
+        Text("") # Spacer
     ]
-    return "\n".join(lines)
 
 
 def render_file_report(
@@ -59,6 +69,11 @@ def render_file_report(
     console.rule(f"[bold] vibecheck [/bold] -- {filepath}", style="bright_cyan")
     console.print()
 
+    language = "python"
+    if filepath.endswith(".js"): language = "javascript"
+    elif filepath.endswith(".go"): language = "go"
+    elif filepath.endswith(".ts") or filepath.endswith(".tsx"): language = "typescript"
+
     sorted_issues = sort_issues(issues)
     critical = [i for i in sorted_issues if i.severity == Severity.CRITICAL]
     warnings = [i for i in sorted_issues if i.severity == Severity.WARN]
@@ -66,8 +81,11 @@ def render_file_report(
 
     # --- CRITICAL (first, always) ---
     if critical:
-        content = "\n\n".join(_format_issue(i) for i in critical)
-        console.print(_severity_panel("CRITICAL", content, Severity.CRITICAL))
+        from rich.console import Group
+        renderables = []
+        for i in critical:
+            renderables.extend(_format_issue(i, language))
+        console.print(_severity_panel("CRITICAL", Group(*renderables), Severity.CRITICAL))
         console.print()
 
     # --- WHAT THIS CODE DOES ---
@@ -90,8 +108,11 @@ def render_file_report(
 
     # --- WARNINGS ---
     if warnings:
-        content = "\n\n".join(_format_issue(i) for i in warnings)
-        console.print(_severity_panel("WARNINGS", content, Severity.WARN))
+        from rich.console import Group
+        renderables = []
+        for i in warnings:
+            renderables.extend(_format_issue(i, language))
+        console.print(_severity_panel("WARNINGS", Group(*renderables), Severity.WARN))
         console.print()
 
     # --- LLM EXPLANATIONS ---
@@ -133,8 +154,11 @@ def render_file_report(
 
     # --- INFO ---
     if infos:
-        content = "\n\n".join(_format_issue(i) for i in infos)
-        console.print(_severity_panel("INFO", content, Severity.INFO))
+        from rich.console import Group
+        renderables = []
+        for i in infos:
+            renderables.extend(_format_issue(i, language))
+        console.print(_severity_panel("INFO", Group(*renderables), Severity.INFO))
         console.print()
 
     # --- SENIOR PERSPECTIVE ---
@@ -392,9 +416,12 @@ def render_ai_audit_report(result: object) -> None:
     ]
     for group, label, group_color in groups:
         if group:
-            content = "\n\n".join(_format_issue(i) for i in group)
+            from rich.console import Group
+            renderables = []
+            for i in group:
+                renderables.extend(_format_issue(i))
             console.print(Panel(
-                content,
+                Group(*renderables),
                 title=f" {ICONS['search']} {label} ",
                 title_align="left",
                 border_style=group_color,

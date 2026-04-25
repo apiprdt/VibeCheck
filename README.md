@@ -1,189 +1,97 @@
-<p align="center">
-  <img src="https://raw.githubusercontent.com/apiprdt/VibeCheck/main/assets/logo.jpg" alt="VibeCheck Logo" width="400">
-</p>
+# 🛡️ VibeCheck v1.1.0 (Beta)
+**The AI Code Safety Firewall for the Agentic Era.**
 
-<h2 align="center">Catch what Claude misses. Deterministic AI code safety — in your terminal.</h2>
+In April 2026, we’re shipping code 10x faster using agents, but we’re inheriting 100x more **"Hallucination Debt"**. VibeCheck is a professional CLI tool designed to audit, secure, and explain AI-generated code with 100% structural precision.
 
-<p align="center">
-  <a href="https://pypi.org/project/vibecheck-ai-tool/"><img src="https://img.shields.io/pypi/v/vibecheck-ai-tool?color=black&labelColor=gray&style=for-the-badge" alt="PyPI"></a>
-  <a href="https://pypi.org/project/vibecheck-ai-tool/"><img src="https://img.shields.io/pypi/pyversions/vibecheck-ai-tool?color=black&labelColor=gray&style=for-the-badge" alt="Python Versions"></a>
-  <a href="https://github.com/apiprdt/vibecheck/blob/main/LICENSE"><img src="https://img.shields.io/github/license/apiprdt/vibecheck?color=black&labelColor=gray&style=for-the-badge" alt="License"></a>
-</p>
-
-<p align="center">
-  <a href="https://github.com/apiprdt/vibecheck"><img src="https://img.shields.io/badge/PRs-Welcome-black?labelColor=gray&style=for-the-badge" alt="PRs Welcome"></a>
-  <a href="https://github.com/apiprdt/vibecheck"><img src="https://img.shields.io/github/stars/apiprdt/vibecheck?color=black&labelColor=gray&style=for-the-badge" alt="Stars"></a>
-  <a href="https://x.com/AfifErditaa"><img src="https://img.shields.io/badge/X%20(Twitter)-@AfifErditaa-black?logo=x&logoColor=white&labelColor=gray&style=for-the-badge" alt="Twitter"></a>
-</p>
+![VibeCheck Audit](https://via.placeholder.com/800x400/000000/FFFFFF?text=VibeCheck+Senior+Developer+Audit)
 
 ---
 
-### **The AI Code Safety Firewall for the Agentic Era (April 2026)**
+## 🔥 Key Features
 
-VibeCheck is a deterministic CLI security auditing tool built to mitigate the "AI Hallucination Debt" of 2025-2026. It catches the patterns **Claude, Copilot, and GPT-5 consistently get wrong**. It combines a strict rule-based engine (no hallucinations, same result every time) with AI-powered explanations to ensure you don't just find bugs — you understand and fix them.
+### 1. 🚨 AI Hallucination Detector (`--ai-audit`)
+Specifically targets "fake correctness" patterns that Claude, GPT-5, and Copilot often miss.
+- **Silent Agent Traps:** Detects `except: pass` blocks used by agents to hide failures.
+- **AI Overconfidence:** Flags nested data access without safety checks.
+- **Mutable Default Hallucinations:** Caught with 100% precision via AST.
 
----
+### 2. 🧠 AST Structural Analysis
+Unlike generic linters, VibeCheck uses **Abstract Syntax Tree (AST)** analysis for Python. It understands the *structure* of your code, not just the text. It's immune to comments, spaces, or formatting tricks.
 
-## 🎬 Cinematic Walkthrough
+### 3. 👨‍💻 Virtual Senior Developer (`--senior`)
+Get a high-level perspective on architectural flaws, not just syntax errors. VibeCheck explains *why* a pattern is dangerous using ELI5 analogies.
 
-<table align="center">
-  <tr>
-    <td align="center"><b>1. Project-Specific Rules</b><br/><img src="https://raw.githubusercontent.com/apiprdt/VibeCheck/main/assets/vibe1.png" width="400"></td>
-    <td align="center"><b>2. Security Audit</b><br/><img src="https://raw.githubusercontent.com/apiprdt/VibeCheck/main/assets/vibe2.png" width="400"></td>
-  </tr>
-  <tr>
-    <td align="center"><b>3. Educational Analogies (ELI5)</b><br/><img src="https://raw.githubusercontent.com/apiprdt/VibeCheck/main/assets/vibe3.png" width="400"></td>
-    <td align="center"><b>4. Security Deep-Dive</b><br/><img src="https://raw.githubusercontent.com/apiprdt/VibeCheck/main/assets/vibe4.png" width="400"></td>
-  </tr>
-  <tr>
-    <td align="center"><b>5. Concept Memory Tracking</b><br/><img src="https://raw.githubusercontent.com/apiprdt/VibeCheck/main/assets/vibe5.png" width="400"></td>
-    <td align="center"><b>6. AI Fix Suggestions</b><br/><img src="https://raw.githubusercontent.com/apiprdt/VibeCheck/main/assets/vibe6.png" width="400"></td>
-  </tr>
-</table>
+### 4. 🛡️ The Git Gatekeeper SOP (`--install-hook`)
+Make security mandatory. Install a pre-commit hook that blocks commits containing critical AI bugs.
+```bash
+vibecheck --install-hook --fail-on-critical
+```
+
+### 5. 🎨 Custom Themes & Syntax Highlighting
+Personalize your audit experience. Supports custom border colors and syntax highlighting for code snippets via `config.yaml`.
 
 ---
 
 ## 🚀 Quick Start
 
-### 1. Installation
+### Installation
 ```bash
-pip install vibecheck-ai-tool
+# Clone the repo
+git clone https://github.com/youruser/vibecheck.git
+cd vibecheck
+
+# Setup environment
+python -m venv .venv
+source .venv/bin/activate  # Or .\.venv\Scripts\activate on Windows
+pip install -e .
 ```
 
-### 2. Initialization (Optional but Recommended)
-Set up your `.vibecheck_rules.md` and check API keys in one go:
+### Basic Usage
 ```bash
+# 1. Initialize your project
 vibecheck --init
-```
 
-### 3. Basic Audit
-Scan any file and get AI-powered explanations:
-```bash
-vibecheck app.py
-```
+# 2. Run a standard audit
+vibecheck path/to/file.py
 
----
+# 3. Run a deep AI Hallucination scan
+vibecheck path/to/file.py --ai-audit
 
-## 💡 Core Modes
+# 4. Get senior dev advice + learn concepts
+vibecheck path/to/file.py --senior --learn
 
-VibeCheck adapts to how you want to work:
-
-*   **`--learn`**: (ELI5 Mode) Uses real-world analogies to explain complex security concepts.
-*   **`--chat`** or **`-c`**: Starts an interactive chat session with the "Senior Dev" about the file.
-*   **`--fast`**: Skip the AI and run only the rule-based engine (Instant & Free).
-*   **`--ai-audit`** or **`-a`**: Scan specifically for AI-generated code anti-patterns.
-
-```bash
-# Audit a file for AI-generated anti-patterns
-vibecheck app.py --ai-audit
-
-# Learn & Chat at the same time
-vibecheck app.py --learn --chat
+# 5. Start an interactive session to fix issues
+vibecheck path/to/file.py --chat
 ```
 
 ---
 
-## 🛠️ Pro Features (Senior Dev Tools)
+## 🛠️ Configuration & SOP
 
-### 🤖 **AI Audit (New)**
-Scan specifically for patterns AI code generators consistently get wrong.
-*(Note: AI Audit is currently optimized for Python. JS/TS/Go support coming soon)*
-```bash
-vibecheck app.py --ai-audit
-```
-Outputs an **AI Confidence Score** (CLEAN → LOW → MEDIUM → HIGH) with a breakdown of every anti-pattern found and *why* AI generates it.
+### Local Rules (`.vibecheck_rules.md`)
+Define team-specific standards. VibeCheck reads this file and applies your custom rules to every scan.
 
-### 🩺 **Error Diagnosis**
-Paste a crash message to diagnose it within your code context.
-```bash
-vibecheck main.py --error "IndexError: list index out of range"
+### Custom Theme (`.vibecheck/config.yaml`)
+```yaml
+theme:
+  critical_border: "magenta"
+  warning_border: "orange1"
+  info_border: "cyan"
 ```
 
-### 📉 **Knowledge Debt Scan**
-Scan your repo to see which files haven't been audited or have critical issues.
+### The "Zero-Debt" Protocol
+Scan your entire project to identify never-before-analyzed files:
 ```bash
-vibecheck --debt ./src
-```
-
-### 👔 **Senior & Risk Review**
-Get high-level architectural feedback and production risk analysis.
-```bash
-vibecheck logic.py --senior --risks
+vibecheck --debt .
 ```
 
 ---
 
-## ⚓ Automation & CI/CD
+## 💎 Why VibeCheck?
 
-### **Git Integration**
-Scan only staged files before you commit:
-```bash
-vibecheck --staged
-```
-Install a pre-commit hook:
-```bash
-vibecheck --install-hook --fail-on-critical
-```
+AI optimizes for code that **looks** correct. VibeCheck ensures it **is** correct.
+- **Deterministic:** Same code, same result. No AI "mood swings" during detection.
+- **Educational:** Every fix comes with a lesson, turning junior devs into seniors.
+- **Agent-Ready:** Built specifically to be the safety layer for autonomous coding agents.
 
-### **CI/CD Support**
-Output results as JSON for easy integration with other tools:
-```bash
-vibecheck app.py --json
-```
-
----
-
-## ✨ Key Features
-
-### 🛡️ **Rule-Based Engine & Local Guidelines**
-VibeCheck uses a strict engine to catch SQL Injections, Hardcoded Credentials, and more—with **CWE and OWASP references** for every critical security vulnerability. It reads your **`.vibecheck_rules.md`** to enforce project-specific standards.
-
-### 🧠 **Smart Global Caching**
-VibeCheck caches every AI response locally (`~/.vibecheck/cache`). Subsequent scans of the same code are **instant and free**.
-
-### 🧹 **Memory Management**
-VibeCheck remembers what you've learned. To start fresh:
-```bash
-vibecheck --reset-memory
-```
-
----
-
-## 🆚 Why VibeCheck vs. Just Asking Claude?
-
-Claude, Copilot, and ChatGPT optimize for code that **looks** correct. They don't simulate execution order, run your code, or enforce your team's rules. VibeCheck does.
-
-| Capability | VibeCheck | Claude / ChatGPT |
-| :--- | :---: | :---: |
-| Deterministic (same code = same result) | ✅ | ❌ |
-| Enforces your team's custom rules | ✅ | ❌ |
-| Remembers what you've already learned | ✅ | ❌ |
-| Git pre-commit integration | ✅ | ❌ |
-| Scans entire directories for debt | ✅ | ❌ |
-| Detects auth middleware order bugs | ✅ | ❌ (rarely) |
-| CI/CD JSON output | ✅ | ❌ |
-| Free to run (rule-based mode) | ✅ | ❌ |
-
----
-
-## ⚙️ Configuration & Providers
-
-VibeCheck supports multiple programming languages (Python, JavaScript, TypeScript, Go) and is **model-agnostic**. Configure your favorite provider via environment variables or `~/.vibecheck/config.yaml`.
-
-| Provider | Environment Variable | Default Model |
-| :--- | :--- | :--- |
-| **Groq** (Fastest) | `GROQ_API_KEY` | `llama-3.3-70b` |
-| **OpenAI** | `OPENAI_API_KEY` | `gpt-4o-mini` |
-| **Anthropic** | `ANTHROPIC_API_KEY` | `claude-3.5-sonnet` |
-| **Google** | `GOOGLE_API_KEY` | `gemini-1.5-pro` |
-| **Ollama** | `VIBECHECK_ENTERPRISE_MODE=1` | `ollama/llama3` |
-
----
-
-## 👨‍💻 Developed by a 16-Year-Old Creator
-Created in 24 hours to prove that AI tools should focus on **education**, not just automation. Architected & Maintained by [Afif Erdita](https://github.com/apiprdt).
-
----
-
-## 📄 License
-MIT License.
+**Built by a 16-year-old developer in 24h to prove that AI tools should focus on integrity, not just speed.** 🛡️🚀

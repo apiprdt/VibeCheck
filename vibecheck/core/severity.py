@@ -57,6 +57,22 @@ SEVERITY_CONFIG = {
         "title": "INFO",
     },
 }
+def apply_theme(theme_config: dict) -> None:
+    """Update SEVERITY_CONFIG with custom colors from the user config."""
+    if not theme_config:
+        return
+    
+    mapping = {
+        "critical_border": (Severity.CRITICAL, "panel_border"),
+        "warning_border": (Severity.WARN, "panel_border"),
+        "info_border": (Severity.INFO, "panel_border"),
+    }
+    
+    for key, (severity, attr) in mapping.items():
+        if key in theme_config:
+            SEVERITY_CONFIG[severity][attr] = theme_config[key]
+            # Also update style for text if color is provided
+            SEVERITY_CONFIG[severity]["style"] = f"bold {theme_config[key]}"
 
 # Emoji/ASCII alternatives for section headers
 ICONS = {

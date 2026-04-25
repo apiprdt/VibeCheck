@@ -28,7 +28,7 @@ $logo = @"
       V   |_||_.__/  \___| \____||_| |_| \___| \___||_|\_\ 
 "@
 Write-Host $logo -ForegroundColor Cyan
-Write-Host "      >> VIRTUAL SENIOR DEVELOPER v1.0.0 ONLINE <<" -ForegroundColor DarkCyan
+Write-Host "      >> VIRTUAL SENIOR DEVELOPER v1.1.0 ONLINE <<" -ForegroundColor DarkCyan
 Write-Host "      --------------------------------------------" -ForegroundColor DarkGray
 
 # STEP 1: PROJECT RULES
@@ -43,24 +43,24 @@ Start-Sleep -Seconds 1
 Show-Header "FEATURE 2: COMPREHENSIVE SECURITY AUDIT"
 Write-Typewriter "Catching critical flaws that simple linters miss..." 20 "Gray"
 Write-Host "PS E:\VibeCheck> " -NoNewline
-Write-Typewriter "vibecheck examples/python_bad.py" 50 "White"
-& $PYTHON $MAIN examples/python_bad.py
+Write-Typewriter "vibecheck examples/auth_handler.py" 50 "White"
+& $PYTHON $MAIN examples/auth_handler.py
 Start-Sleep -Seconds 1
 
 # STEP 3: LEARN MODE (ELI5)
 Show-Header "FEATURE 3: ABSOLUTE BEGINNER MODE (--learn)"
 Write-Typewriter "Don't just fix it. Understand it with real-world analogies..." 20 "Gray"
 Write-Host "PS E:\VibeCheck> " -NoNewline
-Write-Typewriter "vibecheck examples/python_bad.py --learn" 50 "White"
-& $PYTHON $MAIN examples/python_bad.py --learn
+Write-Typewriter "vibecheck examples/auth_handler.py --learn" 50 "White"
+& $PYTHON $MAIN examples/auth_handler.py --learn
 Start-Sleep -Seconds 1
 
 # STEP 4: SMART CACHING
 Show-Header "FEATURE 4: SMART GLOBAL CACHING"
 Write-Typewriter "Scan again? It's instant and costs ZERO tokens. Global across projects." 20 "Gray"
 Write-Host "PS E:\VibeCheck> " -NoNewline
-Write-Typewriter "vibecheck examples/python_bad.py --fast" 50 "White"
-Measure-Command { & $PYTHON $MAIN examples/python_bad.py --fast } | ForEach-Object { Write-Host "  >> Result cached. Execution time: $($_.TotalMilliseconds)ms" -ForegroundColor Green }
+Write-Typewriter "vibecheck examples/auth_handler.py --fast" 50 "White"
+Measure-Command { & $PYTHON $MAIN examples/auth_handler.py --fast } | ForEach-Object { Write-Host "  >> Result cached. Execution time: $($_.TotalMilliseconds)ms" -ForegroundColor Green }
 Start-Sleep -Seconds 1
 
 # STEP 5: INTERACTIVE CHAT

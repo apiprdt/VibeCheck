@@ -17,7 +17,7 @@ from rich.console import Console
 
 from vibecheck import __version__
 from vibecheck.core.detector import detect, detect_fast, DetectionResult, detect_ai_patterns, AIAuditResult
-from vibecheck.core.severity import Severity, sort_issues
+from vibecheck.core.severity import Severity, sort_issues, apply_theme
 from vibecheck.core.memory import (
     get_memory_context, record_concept, reset_memory, get_all_concepts,
 )
@@ -115,9 +115,12 @@ def _output_json(result, llm_response: dict = None, concept_statuses: dict = Non
     print(json.dumps(output, indent=2))
 
 
-@app.command()
+
+@app.callback(invoke_without_command=True)
 def main(
+    ctx: typer.Context,
     file: Optional[str] = typer.Argument(None, help="File or directory to analyze"),
+    # ... rest
     error: Optional[str] = typer.Option(
         None, "--error", "-e", help="Error message to diagnose"
     ),
@@ -240,7 +243,11 @@ def _run_init() -> None:
     if not found:
         rich_console.print("  [yellow]![/yellow] No API key detected. AI features will be disabled.")
         rich_console.print("  [dim]    Set one of: GROQ_API_KEY, OPENAI_API_KEY, ANTHROPIC_API_KEY, GOOGLE_API_KEY[/dim]")
-        rich_console.print("  [dim]    Fastest free option: https://console.groq.com[/dim]")
+        rich_console.print("  [green]  Project ready for high-integrity AI coding.[/green]")
+    rich_console.print()
+    rich_console.print("[bold]Next recommended step (The SOP):[/bold]")
+    rich_console.print("  Run [cyan]vibecheck --install-hook --fail-on-critical[/cyan]")
+    rich_console.print("  This makes VibeCheck your 'Gatekeeper'—blocking commits with critical AI bugs.")
     rich_console.print()
 
     # 2. Create .vibecheck_rules.md if missing
@@ -414,6 +421,7 @@ def _run_file_analysis(
     """Core vibecheck command: analyze a single file."""
     # Load config
     config = load_config()
+    apply_theme(config.get("theme", {}))
 
     # Check if file should be ignored
     if _should_ignore_file(filepath, config):

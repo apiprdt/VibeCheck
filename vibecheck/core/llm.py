@@ -41,15 +41,19 @@ CONFIG_PATH = Path.home() / ".vibecheck" / "config.yaml"
 
 
 def load_config() -> dict:
-    """Load config from ~/.vibecheck/config.yaml if it exists."""
-    if CONFIG_PATH.exists():
-        try:
-            import yaml
-            with open(CONFIG_PATH, "r") as f:
-                config = yaml.safe_load(f)
-            return config if isinstance(config, dict) else {}
-        except Exception:
-            return {}
+    """Load config from .vibecheck/config.yaml (local) or ~/.vibecheck/config.yaml (global)."""
+    local_config = Path(".vibecheck/config.yaml")
+    paths = [local_config, CONFIG_PATH]
+    
+    for p in paths:
+        if p.exists():
+            try:
+                import yaml
+                with open(p, "r") as f:
+                    config = yaml.safe_load(f)
+                return config if isinstance(config, dict) else {}
+            except Exception:
+                continue
     return {}
 
 
